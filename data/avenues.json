@@ -1,0 +1,58 @@
+[
+  {
+    "id": "community-service",
+    "title": "Community Service",
+    "tagline": "Caring for Communities Everywhere",
+    "description": "Fostering environmental conservation, health drives, educational support, and disaster relief across local communities.",
+    "icon": "Users"
+  },
+  {
+    "id": "professional-development",
+    "title": "Professional Development",
+    "tagline": "Skills for Success, Growth for Life",
+    "description": "Empowering undergraduates with leadership skills, corporate etiquette, CV writing, and tech workshops.",
+    "icon": "Briefcase"
+  },
+  {
+    "id": "club-service",
+    "title": "Club Service",
+    "tagline": "Unity Through Service & Fellowship",
+    "description": "Strengthening bonds among members through fellowship trips, social gatherings, and university-wide team events.",
+    "icon": "HeartHandshake"
+  },
+  {
+    "id": "international-service",
+    "title": "International Service",
+    "tagline": "Connecting Continents & Cultures",
+    "description": "Collaborating with twin clubs globally, promoting cultural exchange, and supporting international initiatives.",
+    "icon": "Globe2"
+  },
+  {
+    "id": "digital-it",
+    "title": "Digital & IT",
+    "tagline": "Innovating Tomorrow, Connecting Today",
+    "description": "Developing tech solutions, web systems, cybersecurity awareness campaigns, and bridging digital gaps.",
+    "icon": "Code"
+  },
+  {
+    "id": "sports-recreation",
+    "title": "Sports & Recreation",
+    "tagline": "Fitness for All, Unity in Play",
+    "description": "Organizing sports encounters, e-sports tournaments, and promoting health & fitness across faculties.",
+    "icon": "Trophy"
+  },
+  {
+    "id": "public-relations",
+    "title": "Public Relations",
+    "tagline": "Amplifying Impact & Storytelling",
+    "description": "Managing media presence, social media storytelling, press releases, and building the Rotaract brand.",
+    "icon": "Megaphone"
+  },
+  {
+    "id": "partnerships-finance",
+    "title": "Fundraising & Partnerships",
+    "tagline": "Building Bridges, Creating Change",
+    "description": "Driving corporate sponsorships, crowdfunding, and sustaining club projects through innovative fundraising.",
+    "icon": "DollarSign"
+  }
+]

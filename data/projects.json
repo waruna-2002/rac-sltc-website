@@ -1,0 +1,53 @@
+[
+  {
+    "id": "1",
+    "title": "Neth Peheli - Book Drive",
+    "slug": "neth-peheli",
+    "avenue": "Community Service",
+    "date": "2026-03-10",
+    "description": "Donated stationery, textbooks, and computer lab equipment to rural schools in need.",
+    "fullDescription": "Neth Peheli is an impactful rural educational support project organized by the Community Service Avenue of Rotaract SLTC. The team identified underserved primary schools in rural Padukka and surrounding regions, conducting fundraising drives and collecting educational supplies, storybooks, and essential IT hardware.",
+    "image": "/images/projects/project1.jpg",
+    "impact": "300+ Students Supported",
+    "organizers": "Community Service Team",
+    "highlights": [
+      "Donated over 1,000 textbooks & stationery kits",
+      "Setup a renovated mini IT learning station",
+      "Conducted interactive storytelling and mentorship sessions"
+    ]
+  },
+  {
+    "id": "2",
+    "title": "CodeCraft: Hack & Build",
+    "slug": "codecraft-hackathon",
+    "avenue": "Digital & IT",
+    "date": "2026-04-15",
+    "description": "A 24-hour inter-university hackathon focusing on AI solutions for community development.",
+    "fullDescription": "CodeCraft brought together tech-enthusiast undergraduates from across Sri Lanka to engineer innovative software solutions addressing local community challenges. Participants built AI-assisted healthcare tools, disaster response alerts, and educational web apps under mentorship from senior industry engineers.",
+    "image": "/images/projects/project2.jpg",
+    "impact": "120+ Undergraduates",
+    "organizers": "Digital & IT Avenue",
+    "highlights": [
+      "24-hour non-stop hackathon with 30+ team submissions",
+      "Keynotes from AI industry leaders and Tech Founders",
+      "LKR 150,000+ in cash prizes & incubation opportunities"
+    ]
+  },
+  {
+    "id": "3",
+    "title": "Career Compass 2026",
+    "slug": "career-compass-2026",
+    "avenue": "Professional Development",
+    "date": "2026-05-02",
+    "description": "Industry expert panel discussions, mock interviews, and resume review sessions for undergraduates.",
+    "fullDescription": "Career Compass is the flagship professional development summit organized by Rotaract SLTC. It bridges the gap between university academia and corporate industry standards, featuring resume critique stations, 1-on-1 mock interviews with HR directors, and panel sessions on AI career trends.",
+    "image": "/images/projects/project3.jpg",
+    "impact": "250+ Attendees",
+    "organizers": "Professional Development Avenue",
+    "highlights": [
+      "15+ Corporate Partners & HR Directors present",
+      "Over 100 CVs reviewed on-site with immediate feedback",
+      "Panel discussion on Navigating Tech Careers in 2026+"
+    ]
+  }
+]
