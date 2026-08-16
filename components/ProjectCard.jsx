@@ -4,16 +4,31 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, Calendar, Edit3 } from "lucide-react";
+import { useAdmin } from "@/context/AdminContext";
 
 export default function ProjectCard({ title, slug, avenue, date, description, impact, image, onClick }) {
+  const { isAdmin } = useAdmin();
+
   return (
     <motion.div
       onClick={onClick}
       whileHover={{ y: -8, scale: 1.01 }}
       transition={{ duration: 0.3 }}
-      className="rounded-2xl bg-[#0c1017]/80 border border-slate-800/90 overflow-hidden hover:border-[#e6007e]/60 transition-all duration-300 flex flex-col justify-between group shadow-xl hover:shadow-[0_0_30px_rgba(230,0,126,0.25)] backdrop-blur-xl cursor-pointer"
+      className="rounded-2xl bg-[#0c1017]/80 border border-slate-800/90 overflow-hidden hover:border-[#e6007e]/60 transition-all duration-300 flex flex-col justify-between group shadow-xl hover:shadow-[0_0_30px_rgba(230,0,126,0.25)] backdrop-blur-xl cursor-pointer relative"
     >
+      {/* ADMIN IN-CONTEXT EDIT BADGE ON PROJECT CARD */}
+      {isAdmin && (
+        <a
+          href="/admin"
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-3 right-3 z-30 px-2.5 py-1 rounded-full bg-[#e6007e] text-white text-[10px] font-bold uppercase tracking-wider shadow-md hover:scale-105 transition-all flex items-center gap-1 border border-pink-300/40"
+        >
+          <Edit3 size={11} />
+          <span>Edit Project</span>
+        </a>
+      )}
+
       <div className="relative h-48 sm:h-52 bg-slate-900 overflow-hidden">
         {image ? (
           <Image
@@ -35,10 +50,12 @@ export default function ProjectCard({ title, slug, avenue, date, description, im
           </span>
         </div>
 
-        <div className="absolute top-4 right-4 bg-[#0c1017]/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-semibold text-slate-300 flex items-center gap-1.5 border border-slate-700/60">
-          <Calendar size={11} className="text-[#e6007e]" />
-          <span>{date}</span>
-        </div>
+        {!isAdmin && (
+          <div className="absolute top-4 right-4 bg-[#0c1017]/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-semibold text-slate-300 flex items-center gap-1.5 border border-slate-700/60">
+            <Calendar size={11} className="text-[#e6007e]" />
+            <span>{date}</span>
+          </div>
+        )}
       </div>
 
       <div className="p-6 flex flex-col flex-grow justify-between">

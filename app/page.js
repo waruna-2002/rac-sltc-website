@@ -1,19 +1,64 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import HeroSection from "@/components/HeroSection";
 import StatsCounter from "@/components/StatsCounter";
 import AvenueCard from "@/components/AvenueCard";
+import ProjectCard from "@/components/ProjectCard";
 import ProjectModal from "@/components/ProjectModal";
-import avenuesData from "@/data/avenues.json";
-import projectsData from "@/data/projects.json";
+import { getStoredProjects } from "@/lib/projectsStore";
+import { getStoredAvenues, updateAvenue } from "@/lib/avenuesStore";
+import { getStoredSiteContent, saveStoredSiteContent } from "@/lib/siteStore";
+import { useAdmin } from "@/context/AdminContext";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, Eye, Target, Sparkles, Rocket, Calendar } from "lucide-react";
+import { ArrowRight, Eye, Target, Sparkles, Rocket, Edit3, Save, X, Upload } from "lucide-react";
 
 export default function HomePage() {
+  const { isAdmin } = useAdmin();
   const [selectedProject, setSelectedProject] = useState(null);
+
+  const [projectsList, setProjectsList] = useState([]);
+  const [avenuesList, setAvenuesList] = useState([]);
+  const [siteContent, setSiteContent] = useState({});
+
+  // In-Context Avenue Editing Modal State
+  const [editingAvenue, setEditingAvenue] = useState(null);
+  const [isEditingWhoWeAre, setIsEditingWhoWeAre] = useState(false);
+
+  useEffect(() => {
+    setProjectsList(getStoredProjects().filter((p) => (p.status || "approved") === "approved"));
+    setAvenuesList(getStoredAvenues());
+    setSiteContent(getStoredSiteContent());
+  }, []);
+
+  const handleSaveAvenueEdit = (e) => {
+    e.preventDefault();
+    if (!editingAvenue) return;
+    const updated = updateAvenue(editingAvenue.id, editingAvenue);
+    setAvenuesList(updated);
+    setEditingAvenue(null);
+  };
+
+  const handleSaveWhoWeAre = (e) => {
+    e.preventDefault();
+    saveStoredSiteContent(siteContent);
+    setIsEditingWhoWeAre(false);
+  };
+
+  const handleWhoWeArePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      if (typeof evt.target?.result === "string") {
+        const updated = saveStoredSiteContent({ whoWeAreImage: evt.target.result });
+        setSiteContent(updated);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="space-y-20 pb-20 bg-[#07090e] overflow-hidden">
@@ -24,8 +69,18 @@ export default function HomePage() {
       <StatsCounter />
 
       {/* 3. Who We Are Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
-        {/* Subtle Ambient Background Light */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative group">
+        {/* ADMIN IN-CONTEXT EDIT BADGE FOR WHO WE ARE */}
+        {isAdmin && (
+          <button
+            onClick={() => setIsEditingWhoWeAre(true)}
+            className="absolute top-2 right-6 z-30 px-3.5 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer"
+          >
+            <Edit3 size={14} />
+            <span>Edit Who We Are</span>
+          </button>
+        )}
+
         <div className="absolute top-1/2 left-0 w-72 h-72 bg-[#e6007e]/10 blur-[130px] rounded-full pointer-events-none -z-0" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
@@ -42,14 +97,11 @@ export default function HomePage() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-5 tracking-tight">
-              Empowering Leaders, <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e6007e] via-[#ff4d94] to-cyan-300">
-                Transforming Communities.
-              </span>
+              {siteContent.whoWeAreTitle || "Empowering Leaders, Transforming Communities."}
             </h2>
 
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-8 font-light">
-              The Rotaract Club of SLTC brings together passionate undergraduates dedicated to leadership, tech innovation, and humanitarian service. Based at SLTC Research University, we empower students to lead meaningful community initiatives and cultivate high-impact skills.
+              {siteContent.whoWeAreDescription || "The Rotaract Club of SLTC brings together passionate undergraduates dedicated to leadership, tech innovation, and humanitarian service."}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -62,7 +114,7 @@ export default function HomePage() {
                 </div>
                 <h4 className="text-white font-bold text-sm">Our Mission</h4>
                 <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                  To foster responsible youth leadership through impactful service above self.
+                  {siteContent.missionText || "To foster responsible youth leadership through impactful service above self."}
                 </p>
               </motion.div>
 
@@ -75,7 +127,7 @@ export default function HomePage() {
                 </div>
                 <h4 className="text-white font-bold text-sm">Our Vision</h4>
                 <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                  Building an inspired university community dedicated to social impact.
+                  {siteContent.visionText || "Building an inspired university community dedicated to social impact."}
                 </p>
               </motion.div>
             </div>
@@ -88,10 +140,19 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="lg:col-span-6 relative group"
           >
+            {/* ADMIN PHOTO UPLOAD BADGE ON IMAGE */}
+            {isAdmin && (
+              <label className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer">
+                <Upload size={13} />
+                <span>Upload New Chapter Photo</span>
+                <input type="file" accept="image/*" onChange={handleWhoWeArePhotoUpload} className="hidden" />
+              </label>
+            )}
+
             <div className="absolute -inset-1 bg-gradient-to-r from-[#e6007e] to-cyan-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition duration-500" />
             <div className="relative h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900">
               <Image
-                src="/images/hero.jpg"
+                src={siteContent.whoWeAreImage || "/images/hero.jpg"}
                 alt="SLTC Rotaract Youth Leaders"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
@@ -123,8 +184,12 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {avenuesData.map((ave) => (
-            <AvenueCard key={ave.id} {...ave} />
+          {avenuesList.map((ave) => (
+            <AvenueCard
+              key={ave.id}
+              {...ave}
+              onEdit={() => setEditingAvenue(ave)}
+            />
           ))}
         </div>
       </section>
@@ -152,57 +217,12 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {projectsData.map((proj, idx) => (
-            <motion.div
+          {projectsList.slice(0, 3).map((proj) => (
+            <ProjectCard
               key={proj.id}
+              {...proj}
               onClick={() => setSelectedProject(proj)}
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -8 }}
-              transition={{ duration: 0.4, delay: idx * 0.1 }}
-              className="rounded-2xl bg-[#0c1017]/80 border border-slate-800/90 overflow-hidden hover:border-[#e6007e]/60 transition-all duration-300 flex flex-col justify-between group shadow-xl hover:shadow-[0_0_30px_rgba(230,0,126,0.2)] backdrop-blur-xl cursor-pointer"
-            >
-              <div className="relative h-48 sm:h-52 bg-slate-900 overflow-hidden">
-                <Image
-                  src={proj.image}
-                  alt={proj.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c1017] via-transparent to-transparent opacity-90" />
-                <div className="absolute top-4 left-4">
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-[#ff4d94] bg-[#0c1017]/90 px-3 py-1 rounded-full border border-[#e6007e]/40 backdrop-blur-md">
-                    {proj.avenue}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6 flex flex-col flex-grow justify-between">
-                <div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-2 font-medium">
-                    <Calendar size={13} className="text-[#e6007e]" />
-                    <span>{proj.date}</span>
-                  </div>
-                  <h4 className="text-xl font-bold text-white mb-2 group-hover:text-[#ff4d94] transition-colors leading-snug">
-                    {proj.title}
-                  </h4>
-                  <p className="text-slate-400 text-xs leading-relaxed mb-6 font-light">
-                    {proj.description}
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="font-bold text-cyan-400 text-[11px] tracking-wide">{proj.impact}</span>
-                  <span
-                    className="text-[#e6007e] font-bold hover:text-white transition-colors flex items-center gap-1 group-hover:translate-x-1 transition-transform"
-                  >
-                    <span>View Details</span>
-                    <ArrowRight size={13} />
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+            />
           ))}
         </div>
       </section>
@@ -212,6 +232,115 @@ export default function HomePage() {
         project={selectedProject}
         onClose={() => setSelectedProject(null)}
       />
+
+      {/* IN-CONTEXT AVENUE EDIT MODAL */}
+      {editingAvenue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEditingAvenue(null)} />
+          <form
+            onSubmit={handleSaveAvenueEdit}
+            className="relative w-full max-w-md p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl"
+          >
+            <h3 className="text-xl font-bold text-white">Edit Service Avenue Details</h3>
+            
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue Title</label>
+              <input
+                type="text"
+                value={editingAvenue.title}
+                onChange={(e) => setEditingAvenue({ ...editingAvenue, title: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Tagline</label>
+              <input
+                type="text"
+                value={editingAvenue.subtitle}
+                onChange={(e) => setEditingAvenue({ ...editingAvenue, subtitle: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Description</label>
+              <textarea
+                rows={3}
+                value={editingAvenue.description}
+                onChange={(e) => setEditingAvenue({ ...editingAvenue, description: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <button type="button" onClick={() => setEditingAvenue(null)} className="px-4 py-2 rounded-xl bg-slate-900 text-slate-400 text-xs font-bold">Cancel</button>
+              <button type="submit" className="px-6 py-2 rounded-xl bg-[#e6007e] text-white text-xs font-bold uppercase">Save Avenue</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* IN-CONTEXT WHO WE ARE EDIT MODAL */}
+      {isEditingWhoWeAre && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsEditingWhoWeAre(false)} />
+          <form
+            onSubmit={handleSaveWhoWeAre}
+            className="relative w-full max-w-lg p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl"
+          >
+            <h3 className="text-xl font-bold text-white">Edit Who We Are Section</h3>
+            
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Main Headline</label>
+              <input
+                type="text"
+                value={siteContent.whoWeAreTitle || ""}
+                onChange={(e) => setSiteContent({ ...siteContent, whoWeAreTitle: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Description Paragraph</label>
+              <textarea
+                rows={3}
+                value={siteContent.whoWeAreDescription || ""}
+                onChange={(e) => setSiteContent({ ...siteContent, whoWeAreDescription: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Our Mission</label>
+              <input
+                type="text"
+                value={siteContent.missionText || ""}
+                onChange={(e) => setSiteContent({ ...siteContent, missionText: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Our Vision</label>
+              <input
+                type="text"
+                value={siteContent.visionText || ""}
+                onChange={(e) => setSiteContent({ ...siteContent, visionText: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <button type="button" onClick={() => setIsEditingWhoWeAre(false)} className="px-4 py-2 rounded-xl bg-slate-900 text-slate-400 text-xs font-bold">Cancel</button>
+              <button type="submit" className="px-6 py-2 rounded-xl bg-[#e6007e] text-white text-xs font-bold uppercase">Save Section</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

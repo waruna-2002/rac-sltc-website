@@ -10,8 +10,10 @@ import {
   Code, 
   Trophy, 
   Megaphone, 
-  DollarSign 
+  DollarSign,
+  Edit3
 } from "lucide-react";
+import { useAdmin } from "@/context/AdminContext";
 
 const iconMap = {
   Users,
@@ -24,7 +26,8 @@ const iconMap = {
   DollarSign,
 };
 
-export default function AvenueCard({ title, tagline, description, icon }) {
+export default function AvenueCard({ id, title, tagline, description, icon, onEdit }) {
+  const { isAdmin } = useAdmin();
   const IconComponent = iconMap[icon] || Users;
 
   return (
@@ -33,6 +36,17 @@ export default function AvenueCard({ title, tagline, description, icon }) {
       transition={{ duration: 0.3 }}
       className="p-7 rounded-2xl bg-[#0c1017]/80 border border-slate-800/90 hover:border-[#e6007e]/60 transition-all duration-300 flex flex-col justify-between group shadow-xl hover:shadow-[0_0_30px_rgba(230,0,126,0.2)] backdrop-blur-xl relative overflow-hidden"
     >
+      {/* ADMIN IN-CONTEXT EDIT BADGE ON AVENUE CARD */}
+      {isAdmin && (
+        <button
+          onClick={onEdit}
+          className="absolute top-3 right-3 z-30 px-2.5 py-1 rounded-full bg-[#e6007e] text-white text-[10px] font-bold uppercase tracking-wider shadow-md hover:scale-105 transition-all flex items-center gap-1 border border-pink-300/40 cursor-pointer"
+        >
+          <Edit3 size={11} />
+          <span>Edit Avenue</span>
+        </button>
+      )}
+
       {/* Top Corner Neon Accent Line */}
       <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#e6007e]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-bl-full" />
 

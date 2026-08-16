@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { 
@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Heart
 } from "lucide-react";
+import { getStoredSiteContent } from "@/lib/siteStore";
 
 // Self-contained Social Media SVG Icons
 const Icons = {
@@ -28,25 +29,28 @@ const Icons = {
       <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
     </svg>
   ),
-  TwitterX: () => (
-    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-    </svg>
-  ),
   YouTube: () => (
     <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
       <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
     </svg>
   ),
-  TikTok: () => (
-    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.47 6.27 6.27 0 0 0 1.86-4.47V8.62a8.27 8.27 0 0 0 4.84 1.54V6.71a4.85 4.85 0 0 1-.93-.02z"/>
-    </svg>
-  )
 };
 
 export default function Footer() {
   const [email, setEmail] = useState("");
+  const [site, setSite] = useState({
+    address: "SLTC Research University, Ingiriya Road, Padukka, Sri Lanka",
+    email: "rotaract@sltc.ac.lk",
+    phone: "+94 77 123 4567",
+    facebookUrl: "https://facebook.com",
+    instagramUrl: "https://instagram.com",
+    linkedinUrl: "https://linkedin.com",
+    youtubeUrl: "https://youtube.com",
+  });
+
+  useEffect(() => {
+    setSite(getStoredSiteContent());
+  }, []);
 
   const handleSubscribe = (e) => {
     e.preventDefault();
@@ -61,15 +65,14 @@ export default function Footer() {
     { name: "PROJECTS", href: "/projects" },
     { name: "MEDIA", href: "/media" },
     { name: "JOIN US", href: "/join-us" },
+    { name: "ADMIN PANEL", href: "/admin" },
   ];
 
   const socialItems = [
-    { component: <Icons.Facebook />, href: "https://facebook.com", label: "Facebook" },
-    { component: <Icons.Instagram />, href: "https://instagram.com", label: "Instagram" },
-    { component: <Icons.LinkedIn />, href: "https://linkedin.com", label: "LinkedIn" },
-    { component: <Icons.TwitterX />, href: "https://twitter.com", label: "Twitter" },
-    { component: <Icons.YouTube />, href: "https://youtube.com", label: "YouTube" },
-    { component: <Icons.TikTok />, href: "https://tiktok.com", label: "TikTok" },
+    { component: <Icons.Facebook />, href: site.facebookUrl, label: "Facebook" },
+    { component: <Icons.Instagram />, href: site.instagramUrl, label: "Instagram" },
+    { component: <Icons.LinkedIn />, href: site.linkedinUrl, label: "LinkedIn" },
+    { component: <Icons.YouTube />, href: site.youtubeUrl, label: "YouTube" },
   ];
 
   return (
@@ -95,8 +98,8 @@ export default function Footer() {
                 </div>
               </div>
 
-              <p className="text-slate-400 text-sm leading-relaxed mb-6 pr-4">
-                Empowering youth through service and professional development. Join us in making a difference in our community and beyond.
+              <p className="text-slate-400 text-sm leading-relaxed mb-6 pr-4 font-light">
+                Empowering youth through service and professional development at SLTC Research University. Join us in making an impact.
               </p>
             </div>
 
@@ -143,24 +146,21 @@ export default function Footer() {
             <h4 className="text-white text-base font-semibold border-l-2 border-[#e6007e] pl-2.5 mb-5 tracking-wide">
               Contact Us
             </h4>
-            <ul className="space-y-4 text-sm text-slate-400">
+            <ul className="space-y-4 text-sm text-slate-400 font-light">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-[#e6007e] shrink-0 mt-0.5" />
-                <span>
-                  SLTC Research University,<br />
-                  Ingiriya Rd, Padukka, Sri Lanka
-                </span>
+                <span>{site.address}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-[#e6007e] shrink-0" />
-                <a href="mailto:rotaract@sltc.ac.lk" className="hover:text-white transition-colors">
-                  rotaract@sltc.ac.lk
+                <a href={`mailto:${site.email}`} className="hover:text-white transition-colors">
+                  {site.email}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-[#e6007e] shrink-0" />
-                <a href="tel:+94771234567" className="hover:text-white transition-colors">
-                  +94 77 123 4567
+                <a href={`tel:${site.phone}`} className="hover:text-white transition-colors">
+                  {site.phone}
                 </a>
               </li>
             </ul>
@@ -171,7 +171,7 @@ export default function Footer() {
             <h4 className="text-white text-base font-semibold border-l-2 border-[#e6007e] pl-2.5 mb-5 tracking-wide">
               Stay Updated
             </h4>
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-slate-400 text-sm mb-4 font-light">
               Subscribe to our newsletter to get the latest updates and news.
             </p>
             <form onSubmit={handleSubscribe} className="flex flex-col gap-3">
@@ -204,7 +204,7 @@ export default function Footer() {
           <div className="flex items-center gap-1.5 text-slate-400">
             <span>Made with</span>
             <Heart className="w-3.5 h-3.5 text-[#e6007e] fill-[#e6007e]" />
-            <span>by the IT Team of Rotaract SLTC</span>
+            <span>by IT Team of Rotaract SLTC</span>
           </div>
 
           <div className="flex items-center gap-6">

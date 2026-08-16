@@ -1,21 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PersonCard from "@/components/PersonCard";
 import MemberModal from "@/components/MemberModal";
-import teamData from "@/data/team.json";
+import { getStoredTeam } from "@/lib/teamStore";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 export default function OurPeoplePage() {
   const [filter, setFilter] = useState("All");
   const [selectedMember, setSelectedMember] = useState(null);
+  const [teamList, setTeamList] = useState([]);
+
+  useEffect(() => {
+    setTeamList(getStoredTeam());
+  }, []);
 
   const categories = ["All", "Executive Committee", "Board of Directors"];
-  const filteredTeam = filter === "All" ? teamData : teamData.filter(m => m.category === filter);
+  const filteredTeam = filter === "All" ? teamList : teamList.filter(m => m.category === filter);
 
   // Find president for special top spotlight banner
-  const president = teamData.find(m => m.role.trim().toLowerCase() === "president");
+  const president = teamList.find(m => m.role.trim().toLowerCase() === "president");
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-14 bg-[#07090e]">
