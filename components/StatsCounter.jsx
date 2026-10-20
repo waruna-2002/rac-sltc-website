@@ -16,7 +16,7 @@ const glows = [
 
 export default function StatsCounter() {
   const [stats, setStats] = useState([]);
-  const { isAdmin, openEditModal } = useAdmin();
+  const { isAdmin, isSuperAdmin, openEditModal } = useAdmin();
 
   useEffect(() => {
     setStats(getStoredStats());
@@ -25,7 +25,7 @@ export default function StatsCounter() {
   return (
     <section className="py-12 relative overflow-hidden group">
       {/* ADMIN IN-CONTEXT EDIT BADGE */}
-      {isAdmin && (
+      {isSuperAdmin && (
         <button
           onClick={() => openEditModal("stats")}
           className="absolute top-2 right-6 z-30 px-3 py-1 rounded-full bg-[#e6007e] text-white text-[11px] font-bold uppercase tracking-wider shadow-lg hover:scale-105 transition-all flex items-center gap-1 cursor-pointer border border-pink-300/40"

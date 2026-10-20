@@ -23,12 +23,11 @@ import {
   saveStoredSiteContent 
 } from "@/lib/siteStore";
 import { 
-  hashPasscode, 
-  ADMIN_PASSCODE_HASH, 
   checkRateLimit, 
   registerFailedAttempt, 
   resetRateLimit 
 } from "@/lib/security";
+import { useAdmin } from "@/context/AdminContext";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -56,7 +55,7 @@ import {
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAdmin, isSuperAdmin, isProjectEditor, adminRole, loginAdmin, logoutAdmin } = useAdmin();
   const [passcode, setPasscode] = useState("");
   const [lockoutMsg, setLockoutMsg] = useState("");
 
@@ -113,6 +112,13 @@ export default function AdminDashboardPage() {
     setSiteContent(getStoredSiteContent());
   }, []);
 
+  useEffect(() => {
+    // If project_editor attempts to visit restricted tabs, redirect to approvals
+    if (isProjectEditor && (activeTab === "team" || activeTab === "site" || activeTab === "stats")) {
+      setActiveTab("approvals");
+    }
+  }, [isProjectEditor, activeTab]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLockoutMsg("");
@@ -123,9 +129,8 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const hashedInput = await hashPasscode(passcode);
-    if (hashedInput === ADMIN_PASSCODE_HASH) {
-      setIsAuthenticated(true);
+    const result = await loginAdmin(passcode);
+    if (result.success) {
       setPasscode("");
       resetRateLimit("admin_login");
     } else {
@@ -223,7 +228,7 @@ export default function AdminDashboardPage() {
 
   const pendingCount = projects.filter((p) => p.status === "pending").length;
 
-  if (!isAuthenticated) {
+  if (!isAdmin) {
     return (
       <div className="min-h-[85vh] flex items-center justify-center px-4 pt-28 pb-20 bg-[#07090e]">
         <form
@@ -235,9 +240,9 @@ export default function AdminDashboardPage() {
           </div>
 
           <div>
-            <h1 className="text-2xl font-black text-white">Full Master CMS Admin Portal</h1>
+            <h1 className="text-2xl font-black text-white">Admin Access Portal</h1>
             <p className="text-xs text-slate-400 mt-1">
-              Cryptographically protected master admin dashboard.
+              Secure role-based administration dashboard.
             </p>
           </div>
 
@@ -251,7 +256,7 @@ export default function AdminDashboardPage() {
           <div className="space-y-4">
             <Input
               type="password"
-              placeholder="Enter Admin Passcode (admin123)"
+              placeholder="Enter Admin Passcode"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
               required
@@ -259,13 +264,16 @@ export default function AdminDashboardPage() {
 
             <Button type="submit" className="w-full py-3.5 text-xs font-bold uppercase tracking-widest">
               <Unlock size={14} />
-              <span>Login as Admin</span>
+              <span>Login to Dashboard</span>
             </Button>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-            <p className="font-semibold text-slate-300">Credentials Notice:</p>
-            <p className="text-[10px] text-slate-500">Default Admin Passcode: <code className="text-[#e6007e]">admin123</code></p>
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-2 text-left">
+            <p className="font-bold text-slate-200">Passcode Credentials Notice:</p>
+            <div className="flex flex-col gap-1 text-[11px]">
+              <p>• Full Master Admin: <code className="text-[#e6007e]">admin123</code> (All Features)</p>
+              <p>• Project Editor: <code className="text-cyan-400">project123</code> (Approvals &amp; Projects)</p>
+            </div>
           </div>
         </form>
       </div>
@@ -277,20 +285,26 @@ export default function AdminDashboardPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-2">
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase mb-2 ${
+            isSuperAdmin
+              ? "bg-[#e6007e]/10 border border-[#e6007e]/30 text-[#e6007e]"
+              : "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
+          }`}>
             <ShieldCheck size={12} />
-            <span>FULL WEBSITE MASTER CMS CONTROL CENTER</span>
+            <span>
+              {isSuperAdmin ? "FULL WEBSITE MASTER CMS CONTROL CENTER" : "PROJECT EDITOR & APPROVALS CONTROL"}
+            </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Rotaract SLTC Master Admin Dashboard
+            {isSuperAdmin ? "Rotaract SLTC Master Admin Dashboard" : "Rotaract SLTC Project Editor Dashboard"}
           </h1>
         </div>
 
         <button
-          onClick={() => setIsAuthenticated(false)}
+          onClick={logoutAdmin}
           className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white self-start sm:self-auto cursor-pointer"
         >
-          Logout Admin Session
+          Logout Session ({isSuperAdmin ? "Master Admin" : "Project Editor"})
         </button>
       </div>
 
@@ -320,41 +334,45 @@ export default function AdminDashboardPage() {
           <span>Projects &amp; Gallery ({projects.length})</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab("team")}
-          className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "team"
-              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          <Users size={16} />
-          <span>Team &amp; People ({team.length})</span>
-        </button>
+        {isSuperAdmin && (
+          <>
+            <button
+              onClick={() => setActiveTab("team")}
+              className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === "team"
+                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  : "text-slate-400 hover:text-white hover:bg-slate-900"
+              }`}
+            >
+              <Users size={16} />
+              <span>Team &amp; People ({team.length})</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab("site")}
-          className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "site"
-              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          <Globe size={16} />
-          <span>Global Site CMS Content</span>
-        </button>
+            <button
+              onClick={() => setActiveTab("site")}
+              className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === "site"
+                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  : "text-slate-400 hover:text-white hover:bg-slate-900"
+              }`}
+            >
+              <Globe size={16} />
+              <span>Global Site CMS Content</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab("stats")}
-          className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "stats"
-              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
-              : "text-slate-400 hover:text-white hover:bg-slate-900"
-          }`}
-        >
-          <BarChart3 size={16} />
-          <span>Live Counter Stats</span>
-        </button>
+            <button
+              onClick={() => setActiveTab("stats")}
+              className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === "stats"
+                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  : "text-slate-400 hover:text-white hover:bg-slate-900"
+              }`}
+            >
+              <BarChart3 size={16} />
+              <span>Live Counter Stats</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* TAB 1: APPROVALS QUEUE */}
@@ -487,7 +505,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* TAB 3: TEAM & PEOPLE MANAGER */}
-      {activeTab === "team" && (
+      {isSuperAdmin && activeTab === "team" && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h2 className="text-xl font-bold text-white">Manage Executive Committee &amp; Board ({team.length})</h2>
@@ -543,7 +561,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* TAB 4: GLOBAL SITE CONTENT CMS */}
-      {activeTab === "site" && (
+      {isSuperAdmin && activeTab === "site" && (
         <form onSubmit={handleSaveSiteCMS} className="p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-6 max-w-4xl">
           <div className="border-b border-slate-800 pb-4">
             <h2 className="text-xl font-bold text-white">Full Website Content CMS Manager</h2>
@@ -601,7 +619,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* TAB 5: LIVE STATS MANAGER */}
-      {activeTab === "stats" && (
+      {isSuperAdmin && activeTab === "stats" && (
         <form onSubmit={handleSaveStats} className="p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-6 max-w-2xl">
           <h2 className="text-xl font-bold text-white">Edit Homepage Live Counter Stats</h2>
 

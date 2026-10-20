@@ -16,7 +16,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Eye, Target, Sparkles, Rocket, Edit3, Save, X, Upload } from "lucide-react";
 
 export default function HomePage() {
-  const { isAdmin } = useAdmin();
+  const { isAdmin, isSuperAdmin } = useAdmin();
   const [selectedProject, setSelectedProject] = useState(null);
 
   const [projectsList, setProjectsList] = useState([]);
@@ -71,7 +71,7 @@ export default function HomePage() {
       {/* 3. Who We Are Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative group">
         {/* ADMIN IN-CONTEXT EDIT BADGE FOR WHO WE ARE */}
-        {isAdmin && (
+        {isSuperAdmin && (
           <button
             onClick={() => setIsEditingWhoWeAre(true)}
             className="absolute top-2 right-6 z-30 px-3.5 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer"
@@ -141,7 +141,7 @@ export default function HomePage() {
             className="lg:col-span-6 relative group"
           >
             {/* ADMIN PHOTO UPLOAD BADGE ON IMAGE */}
-            {isAdmin && (
+            {isSuperAdmin && (
               <label className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer">
                 <Upload size={13} />
                 <span>Upload New Chapter Photo</span>

@@ -8,7 +8,7 @@ import { getStoredSiteContent } from "@/lib/siteStore";
 import { useAdmin } from "@/context/AdminContext";
 
 export default function HeroSection() {
-  const { isAdmin, openEditModal } = useAdmin();
+  const { isAdmin, isSuperAdmin, openEditModal } = useAdmin();
   const [site, setSite] = useState({
     heroTitle: "ROTARACT CLUB OF SLTC",
     heroSubtitle: "Ignite Potential • Inspire Impact • Serve with Passion",
@@ -23,7 +23,7 @@ export default function HeroSection() {
   return (
     <section className="relative min-h-[92vh] flex items-center justify-center text-center px-4 sm:px-6 lg:px-8 pt-28 pb-20 overflow-hidden bg-[#07090e] group">
       {/* ADMIN IN-CONTEXT EDIT BADGE */}
-      {isAdmin && (
+      {isSuperAdmin && (
         <button
           onClick={() => openEditModal("hero")}
           className="absolute top-24 right-6 z-30 px-3.5 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer"

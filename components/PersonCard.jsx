@@ -19,7 +19,7 @@ const InstagramIcon = () => (
 );
 
 export default function PersonCard({ id, name, role, faculty, image, linkedin, instagram, onClick }) {
-  const { isAdmin } = useAdmin();
+  const { isAdmin, isSuperAdmin } = useAdmin();
   const isPresident = role && role.trim().toLowerCase() === "president";
   const hasCustomImage = image && image !== "/images/team/placeholder.jpg";
 
@@ -35,7 +35,7 @@ export default function PersonCard({ id, name, role, faculty, image, linkedin, i
       }`}
     >
       {/* ADMIN IN-CONTEXT EDIT BADGE ON PERSON CARD */}
-      {isAdmin && (
+      {isSuperAdmin && (
         <a
           href="/admin"
           onClick={(e) => e.stopPropagation()}

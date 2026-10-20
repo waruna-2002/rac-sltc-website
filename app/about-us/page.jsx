@@ -7,7 +7,7 @@ import { getStoredSiteContent } from "@/lib/siteStore";
 import { useAdmin } from "@/context/AdminContext";
 
 export default function AboutUsPage() {
-  const { isAdmin, openEditModal } = useAdmin();
+  const { isAdmin, isSuperAdmin, openEditModal } = useAdmin();
   const [site, setSite] = useState({
     aboutHistory: "Chartered under Rotary International District 3220, the Rotaract Club of SLTC Research University has grown into one of the most vibrant youth organizations in Sri Lanka. Our members drive sustainable development, professional skill enhancement, and youth empowerment.",
     charterYear: "2020",
@@ -23,7 +23,7 @@ export default function AboutUsPage() {
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16 bg-[#07090e] relative">
       {/* ADMIN IN-CONTEXT EDIT BADGE */}
-      {isAdmin && (
+      {isSuperAdmin && (
         <button
           onClick={() => openEditModal("about")}
           className="absolute top-24 right-6 z-30 px-3.5 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer"

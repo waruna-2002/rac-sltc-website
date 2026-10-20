@@ -119,7 +119,7 @@ export default function Navbar() {
                 className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-200 hover:text-rose-400 transition-all inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-md"
               >
                 <LogOut size={13} />
-                <span>ADMIN LOGOUT</span>
+                <span>LOGOUT</span>
               </button>
             ) : (
               <button
@@ -154,7 +154,10 @@ export default function Navbar() {
             <div className="w-12 h-12 rounded-full bg-[#e6007e]/20 text-[#e6007e] mx-auto flex items-center justify-center border border-[#e6007e]/40">
               <ShieldCheck size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white">Admin Live Edit Login</h3>
+            <div>
+              <h3 className="text-xl font-bold text-white">Admin Login</h3>
+              <p className="text-[11px] text-slate-400 mt-1">Enter your admin role passcode</p>
+            </div>
 
             {passError && (
               <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-semibold">
@@ -164,7 +167,7 @@ export default function Navbar() {
 
             <input
               type="password"
-              placeholder="Passcode (admin123)"
+              placeholder="Passcode (admin123 / project123)"
               value={adminPasscode}
               onChange={(e) => setAdminPasscode(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-[#e6007e]"
@@ -175,7 +178,7 @@ export default function Navbar() {
               type="submit"
               className="w-full py-3 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider shadow-lg"
             >
-              Enable Admin Live Mode
+              Enable Admin Mode
             </button>
           </form>
         </div>

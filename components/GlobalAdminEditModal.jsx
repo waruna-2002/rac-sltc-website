@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button";
 import { X, Save, Edit3, Sparkles } from "lucide-react";
 
 export default function GlobalAdminEditModal() {
-  const { editModalConfig, closeEditModal } = useAdmin();
+  const { editModalConfig, closeEditModal, isSuperAdmin } = useAdmin();
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function GlobalAdminEditModal() {
     }
   }, [editModalConfig]);
 
-  if (!editModalConfig) return null;
+  if (!editModalConfig || !isSuperAdmin) return null;
 
   const { type } = editModalConfig;
 

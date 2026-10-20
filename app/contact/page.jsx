@@ -8,7 +8,7 @@ import { getStoredSiteContent } from "@/lib/siteStore";
 import { useAdmin } from "@/context/AdminContext";
 
 export default function ContactPage() {
-  const { isAdmin, openEditModal } = useAdmin();
+  const { isAdmin, isSuperAdmin, openEditModal } = useAdmin();
   const [sent, setSent] = useState(false);
   const [site, setSite] = useState({
     address: "SLTC Research University, Ingiriya Road, Padukka, Sri Lanka",
@@ -28,7 +28,7 @@ export default function ContactPage() {
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12 bg-[#07090e] relative">
       {/* ADMIN IN-CONTEXT EDIT BADGE */}
-      {isAdmin && (
+      {isSuperAdmin && (
         <button
           onClick={() => openEditModal("contact")}
           className="absolute top-24 right-6 z-30 px-3.5 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer"

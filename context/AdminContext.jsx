@@ -1,36 +1,46 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { hashPasscode, ADMIN_PASSCODE_HASH } from "@/lib/security";
+import { authenticatePasscode } from "@/lib/security";
 
 const AdminContext = createContext();
 
 export function AdminProvider({ children }) {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminRole, setAdminRole] = useState(null); // null | "super_admin" | "project_editor"
   const [editModalConfig, setEditModalConfig] = useState(null); // { type: "hero" | "about" | "project" | "member" | "stats" | "contact", data: any }
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("rotaract_sltc_admin_session");
-      if (stored === "true") setIsAdmin(true);
+      const storedRole = localStorage.getItem("rotaract_sltc_admin_role");
+      if (storedRole === "super_admin" || storedRole === "project_editor") {
+        setAdminRole(storedRole);
+      } else {
+        const legacySession = localStorage.getItem("rotaract_sltc_admin_session");
+        if (legacySession === "true") {
+          setAdminRole("super_admin");
+          localStorage.setItem("rotaract_sltc_admin_role", "super_admin");
+        }
+      }
     }
   }, []);
 
   const loginAdmin = async (passcode) => {
-    const hashed = await hashPasscode(passcode);
-    if (hashed === ADMIN_PASSCODE_HASH) {
-      setIsAdmin(true);
+    const authResult = await authenticatePasscode(passcode);
+    if (authResult.success) {
+      setAdminRole(authResult.role);
       if (typeof window !== "undefined") {
+        localStorage.setItem("rotaract_sltc_admin_role", authResult.role);
         localStorage.setItem("rotaract_sltc_admin_session", "true");
       }
-      return { success: true };
+      return { success: true, role: authResult.role };
     }
     return { success: false, error: "Incorrect Passcode!" };
   };
 
   const logoutAdmin = () => {
-    setIsAdmin(false);
+    setAdminRole(null);
     if (typeof window !== "undefined") {
+      localStorage.removeItem("rotaract_sltc_admin_role");
       localStorage.removeItem("rotaract_sltc_admin_session");
     }
   };
@@ -43,10 +53,17 @@ export function AdminProvider({ children }) {
     setEditModalConfig(null);
   };
 
+  const isAdmin = Boolean(adminRole);
+  const isSuperAdmin = adminRole === "super_admin";
+  const isProjectEditor = adminRole === "project_editor";
+
   return (
     <AdminContext.Provider
       value={{
         isAdmin,
+        isSuperAdmin,
+        isProjectEditor,
+        adminRole,
         loginAdmin,
         logoutAdmin,
         editModalConfig,
