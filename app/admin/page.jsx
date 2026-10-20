@@ -110,6 +110,16 @@ export default function AdminDashboardPage() {
     setTeam(getStoredTeam());
     setStats(getStoredStats());
     setSiteContent(getStoredSiteContent());
+
+    // Fetch live projects from MongoDB API
+    fetch("/api/projects?status=all")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setProjects(json.data);
+        }
+      })
+      .catch((err) => console.log("Admin projects API fallback:", err));
   }, []);
 
   useEffect(() => {
@@ -163,33 +173,58 @@ export default function AdminDashboardPage() {
     });
   };
 
-  // --- PROJECT MANAGEMENT ACTIONS ---
-  const handleApproveProject = (id) => {
+  // --- PROJECT MANAGEMENT ACTIONS (Synchronized with Database API) ---
+  const handleApproveProject = async (id) => {
     setProjects(updateProjectStatus(id, "approved"));
+    await fetch(`/api/projects/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "approved" }),
+    }).catch((err) => console.log("Approval sync error:", err));
   };
 
-  const handleRejectProject = (id) => {
+  const handleRejectProject = async (id) => {
     setProjects(updateProjectStatus(id, "rejected"));
+    await fetch(`/api/projects/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "rejected" }),
+    }).catch((err) => console.log("Rejection sync error:", err));
   };
 
-  const handleDeleteProject = (id) => {
+  const handleDeleteProject = async (id) => {
     if (confirm("Are you sure you want to delete this project?")) {
       setProjects(deleteProject(id));
+      await fetch(`/api/projects/${id}`, {
+        method: "DELETE",
+      }).catch((err) => console.log("Deletion sync error:", err));
     }
   };
 
-  const handleSaveProjectEdit = (e) => {
+  const handleSaveProjectEdit = async (e) => {
     e.preventDefault();
     if (!editingProject) return;
     setProjects(updateProject(editingProject.id, editingProject));
+    const targetId = editingProject.id || editingProject._id;
+    await fetch(`/api/projects/${targetId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editingProject),
+    }).catch((err) => console.log("Save edit sync error:", err));
     setEditingProject(null);
   };
 
-  const handleAddProjectSubmit = (e) => {
+  const handleAddProjectSubmit = async (e) => {
     e.preventDefault();
-    addProjectSubmission({ ...newProjectForm, status: "approved" });
+    const newProj = { ...newProjectForm, status: "approved" };
+    addProjectSubmission(newProj);
     setProjects(getStoredProjects());
     setIsAddingProject(false);
+    await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newProj),
+    }).catch((err) => console.log("Add project sync error:", err));
   };
 
   // --- TEAM MEMBER MANAGEMENT ACTIONS ---

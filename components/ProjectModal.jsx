@@ -17,13 +17,13 @@ import {
 } from "lucide-react";
 
 export default function ProjectModal({ project, onClose }) {
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
   if (!project) return null;
 
   const galleryImages = (project.images && project.images.length > 0)
     ? project.images
     : [project.image || "/images/projects/project1.jpg"];
-
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   return (
     <AnimatePresence>

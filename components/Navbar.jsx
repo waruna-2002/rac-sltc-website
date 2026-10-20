@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useAdmin } from "@/context/AdminContext";
 import { getStoredProjects } from "@/lib/projectsStore";
+import Image from "next/image";
+import BrandLogo, { RotaractWheelIcon, SltcCampusIcon } from "@/components/BrandLogo";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,17 +91,8 @@ export default function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Left: Rotaract Brand Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-[#e6007e] to-[#ff4d94] flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-md shadow-[#e6007e]/40 group-hover:scale-105 transition-transform">
-              R
-            </div>
-            <div>
-              <span className="text-sm sm:text-base lg:text-lg font-extrabold tracking-wider text-white whitespace-nowrap">
-                ROTARACT <span className="text-[#e6007e]">SLTC</span>
-              </span>
-            </div>
-          </Link>
+          {/* Left: Official Rotaract & SLTC Campus Brand Logo */}
+          <BrandLogo />
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
@@ -204,13 +197,14 @@ export default function Navbar() {
               className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-[#0c1017] border-l border-slate-800/80 z-50 flex flex-col p-6 shadow-2xl overflow-y-auto"
             >
               <div className="flex items-center justify-between pb-6 border-b border-slate-800/80">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-full bg-[#e6007e] flex items-center justify-center text-white font-bold text-xs">
-                    R
-                  </div>
-                  <span className="text-xs sm:text-sm font-bold text-white tracking-wider uppercase">
-                    Navigation Menu
-                  </span>
+                <div className="flex items-center">
+                  <Image
+                    src="/images/rotaract-sltc-logo-transparent.png"
+                    alt="Rotaract Club of Sri Lanka Technology Campus"
+                    width={180}
+                    height={50}
+                    className="h-7 w-auto object-contain drop-shadow-[0_0_12px_rgba(230,0,126,0.4)]"
+                  />
                 </div>
 
                 <button

@@ -39,8 +39,8 @@ export default function AboutUsPage() {
           <Sparkles size={12} />
           <span>ABOUT OUR CLUB</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight">
-          Legacy of <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e6007e] via-[#ff4d94] to-cyan-300">Service &amp; Leadership</span>
+        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
+          Legacy of <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Service</span>
         </h1>
         <p className="text-slate-300 text-sm sm:text-base mt-3 font-light leading-relaxed">
           Empowering undergraduates at SLTC Research University to lead, innovate, and transform communities across Sri Lanka.

@@ -14,7 +14,18 @@ export default function ProjectsPage() {
   const [allProjects, setAllProjects] = useState([]);
 
   useEffect(() => {
+    // Instant fallback from local cache
     setAllProjects(getStoredProjects());
+
+    // Fetch dynamic project documents from database API
+    fetch("/api/projects?status=approved")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setAllProjects(json.data);
+        }
+      })
+      .catch((err) => console.log("Database fetch fallback:", err));
   }, []);
 
   const avenues = [
@@ -44,8 +55,8 @@ export default function ProjectsPage() {
             <Sparkles size={12} />
             <span>PORTFOLIO OF IMPACT</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight">
-            Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e6007e] via-[#ff4d94] to-cyan-300">Projects</span>
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
+            Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Projects</span>
           </h1>
           <p className="text-slate-300 text-sm sm:text-base mt-3 font-light leading-relaxed">
             Explore the high-impact initiatives and activities conducted across our service avenues. Click on any project card for instant details.

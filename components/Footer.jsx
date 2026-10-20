@@ -11,6 +11,8 @@ import {
   Heart
 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
+import Image from "next/image";
+import { RotaractWheelIcon, SltcCampusIcon } from "@/components/BrandLogo";
 
 // Self-contained Social Media SVG Icons
 const Icons = {
@@ -86,16 +88,15 @@ export default function Footer() {
           {/* Col 1 */}
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-[#e6007e] flex items-center justify-center font-black text-white text-sm">
-                  R
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white tracking-wider leading-tight">
-                    Rotaract <span className="text-[#e6007e]">SLTC</span>
-                  </h3>
-                  <p className="text-xs text-slate-400 tracking-widest uppercase">District 3220</p>
-                </div>
+              <div className="mb-4">
+                <Image
+                  src="/images/rotaract-sltc-logo-transparent.png"
+                  alt="Rotaract Club of Sri Lanka Technology Campus"
+                  width={220}
+                  height={62}
+                  className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(230,0,126,0.35)]"
+                />
+                <p className="text-[11px] text-slate-400 tracking-widest uppercase mt-2">District 3220 • Sri Lanka &amp; Maldives</p>
               </div>
 
               <p className="text-slate-400 text-sm leading-relaxed mb-6 pr-4 font-light">

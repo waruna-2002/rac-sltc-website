@@ -32,6 +32,7 @@ export default function SubmitProjectPage() {
   const [editingProject, setEditingProject] = useState(null);
   const [myEmail, setMyEmail] = useState("");
   const [projectsList, setProjectsList] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -48,6 +49,14 @@ export default function SubmitProjectPage() {
 
   useEffect(() => {
     setProjectsList(getStoredProjects());
+    fetch("/api/projects?status=all")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setProjectsList(json.data);
+        }
+      })
+      .catch((err) => console.log("Projects API fetch fallback:", err));
   }, [submitted, editingProject]);
 
   // Handle direct file upload for MULTIPLE photos & videos
@@ -89,16 +98,33 @@ export default function SubmitProjectPage() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingProject) {
-      updateProject(editingProject.id, formData);
-      setEditingProject(null);
-    } else {
-      addProjectSubmission(formData);
+    setIsSubmitting(true);
+    try {
+      if (editingProject) {
+        updateProject(editingProject.id, formData);
+        await fetch(`/api/projects/${editingProject.id || editingProject._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }).catch((err) => console.log("API update error:", err));
+        setEditingProject(null);
+      } else {
+        addProjectSubmission(formData);
+        await fetch("/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }).catch((err) => console.log("API submit error:", err));
+      }
+      setSubmitted(true);
+      setMyEmail(formData.submittedBy);
+    } catch (err) {
+      console.error("Submit error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
-    setSubmitted(true);
-    setMyEmail(formData.submittedBy);
   };
 
   const startEdit = (proj) => {

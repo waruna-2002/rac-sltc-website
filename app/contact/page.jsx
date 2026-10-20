@@ -10,19 +10,40 @@ import { useAdmin } from "@/context/AdminContext";
 export default function ContactPage() {
   const { isAdmin, isSuperAdmin, openEditModal } = useAdmin();
   const [sent, setSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [site, setSite] = useState({
     address: "SLTC Research University, Ingiriya Road, Padukka, Sri Lanka",
     email: "rotaract@sltc.ac.lk",
     phone: "+94 77 123 4567",
   });
 
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+
   useEffect(() => {
     setSite(getStoredSiteContent());
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSent(true);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      setSent(true);
+    } catch (err) {
+      console.error("Contact submit error:", err);
+      setSent(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -93,9 +114,28 @@ export default function ContactPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input label="Your Name" required placeholder="John Doe" />
-              <Input label="Your Email" type="email" required placeholder="john@example.com" />
-              <Input label="Subject" required placeholder="Project Collaboration Inquiry" />
+              <Input
+                label="Your Name"
+                required
+                placeholder="John Doe"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+              <Input
+                label="Your Email"
+                type="email"
+                required
+                placeholder="john@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+              <Input
+                label="Subject"
+                required
+                placeholder="Project Collaboration Inquiry"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              />
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
                   Message
@@ -104,12 +144,14 @@ export default function ContactPage() {
                   rows={4}
                   required
                   placeholder="How can we help you?"
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
                 />
               </div>
-              <Button type="submit" className="w-full py-3.5 text-xs font-bold uppercase tracking-wider">
+              <Button type="submit" disabled={isSubmitting} className="w-full py-3.5 text-xs font-bold uppercase tracking-wider">
                 <Send size={14} />
-                <span>Send Message</span>
+                <span>{isSubmitting ? "Sending..." : "Send Message"}</span>
               </Button>
             </form>
           )}

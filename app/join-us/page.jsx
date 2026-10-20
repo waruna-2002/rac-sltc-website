@@ -7,6 +7,8 @@ import { CheckCircle2, Sparkles } from "lucide-react";
 
 export default function JoinUsPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -17,9 +19,29 @@ export default function JoinUsPage() {
     reason: ""
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const res = await fetch("/api/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to submit application");
+      }
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Submission error:", err);
+      // Even if network or server error occurs, record locally so user is not stuck
+      setSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

@@ -1,6 +1,5 @@
 "use client";
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import projectsData from "@/data/projects.json";
@@ -10,13 +9,27 @@ export default function SingleProjectPage() {
   const params = useParams();
   const slug = params?.slug;
 
-  const project = projectsData.find((p) => p.slug === slug) || {
+  const localProject = projectsData.find((p) => p.slug === slug) || {
     title: "Project Details",
     avenue: "Initiative",
     date: "2026",
     description: "Detailed description of the project initiatives and community impact.",
     impact: "Impactful Project"
   };
+
+  const [project, setProject] = useState(localProject);
+
+  useEffect(() => {
+    if (!slug) return;
+    fetch(`/api/projects/${slug}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setProject(json.data);
+        }
+      })
+      .catch((err) => console.log("Single project fetch fallback:", err));
+  }, [slug]);
 
   return (
     <div className="pt-28 pb-20 px-6 max-w-4xl mx-auto space-y-8">

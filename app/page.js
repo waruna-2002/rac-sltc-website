@@ -6,6 +6,7 @@ import StatsCounter from "@/components/StatsCounter";
 import AvenueCard from "@/components/AvenueCard";
 import ProjectCard from "@/components/ProjectCard";
 import ProjectModal from "@/components/ProjectModal";
+import UpcomingEventsSection from "@/components/UpcomingEventsSection";
 import { getStoredProjects } from "@/lib/projectsStore";
 import { getStoredAvenues, updateAvenue } from "@/lib/avenuesStore";
 import { getStoredSiteContent, saveStoredSiteContent } from "@/lib/siteStore";
@@ -28,9 +29,20 @@ export default function HomePage() {
   const [isEditingWhoWeAre, setIsEditingWhoWeAre] = useState(false);
 
   useEffect(() => {
+    // 1. Initial cached / stored projects
     setProjectsList(getStoredProjects().filter((p) => (p.status || "approved") === "approved"));
     setAvenuesList(getStoredAvenues());
     setSiteContent(getStoredSiteContent());
+
+    // 2. Fetch latest approved projects dynamically from MongoDB API
+    fetch("/api/projects?status=approved")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setProjectsList(json.data);
+        }
+      })
+      .catch((err) => console.log("Database fetch fallback:", err));
   }, []);
 
   const handleSaveAvenueEdit = (e) => {
@@ -96,7 +108,7 @@ export default function HomePage() {
               <span>WHO WE ARE</span>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-5 tracking-tight">
+            <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight mb-5">
               {siteContent.whoWeAreTitle || "Empowering Leaders, Transforming Communities."}
             </h2>
 
@@ -112,7 +124,7 @@ export default function HomePage() {
                 <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-[#e6007e] mb-3">
                   <Target size={20} />
                 </div>
-                <h4 className="text-white font-bold text-sm">Our Mission</h4>
+                <h4 className="text-white font-bold text-sm sm:text-base tracking-wide uppercase">Our Mission</h4>
                 <p className="text-slate-400 text-xs mt-1 leading-relaxed">
                   {siteContent.missionText || "To foster responsible youth leadership through impactful service above self."}
                 </p>
@@ -125,7 +137,7 @@ export default function HomePage() {
                 <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-cyan-400 mb-3">
                   <Eye size={20} />
                 </div>
-                <h4 className="text-white font-bold text-sm">Our Vision</h4>
+                <h4 className="text-white font-bold text-sm sm:text-base tracking-wide uppercase">Our Vision</h4>
                 <p className="text-slate-400 text-xs mt-1 leading-relaxed">
                   {siteContent.visionText || "Building an inspired university community dedicated to social impact."}
                 </p>
@@ -175,8 +187,8 @@ export default function HomePage() {
             <Rocket size={12} />
             <span>OUR AVENUES OF SERVICE</span>
           </div>
-          <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Areas of Impact
+          <h3 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
+            Areas of <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Impact</span>
           </h3>
           <p className="text-slate-400 text-sm sm:text-base mt-3 font-light">
             Explore the core avenues through which our members drive positive transformation.
@@ -202,8 +214,8 @@ export default function HomePage() {
               <Sparkles size={12} />
               <span>PORTFOLIO</span>
             </div>
-            <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-              Featured Projects
+            <h3 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
+              Featured <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Projects</span>
             </h3>
           </div>
 
@@ -226,6 +238,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* 6. Upcoming Events & Club Initiatives */}
+      <UpcomingEventsSection />
 
       {/* Project Details Modal */}
       <ProjectModal
