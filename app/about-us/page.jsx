@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Target, Eye, Award, CheckCircle, Sparkles, Building2, Globe2, Edit3 } from "lucide-react";
+import { Target, Eye, Award, CheckCircle, Building2, Globe2, Edit3 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
 import { useAdmin } from "@/context/AdminContext";
 
@@ -36,7 +36,7 @@ export default function AboutUsPage() {
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-          <Sparkles size={12} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
           <span>ABOUT OUR CLUB</span>
         </div>
         <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">

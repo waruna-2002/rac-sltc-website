@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import ContactMessage from "@/models/ContactMessage";
+import { requireAdmin } from "@/lib/serverAuth";
+import { 
+  getClientIp, 
+  checkServerRateLimit, 
+  rateLimitExceededResponse 
+} from "@/lib/serverRateLimit";
+import { sanitizeInput } from "@/lib/security";
 
-// GET /api/contact - List contact messages (for admin)
-export async function GET() {
+// GET /api/contact - List contact messages (Strictly Super Admin Only)
+export async function GET(request) {
+  const auth = requireAdmin(request, ["super_admin"]);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     await dbConnect();
     const messages = await ContactMessage.find({}).sort({ createdAt: -1 });
@@ -16,8 +28,22 @@ export async function GET() {
   }
 }
 
-// POST /api/contact - Submit new message
+// POST /api/contact - Submit new message (Public inquiry with IP Rate Limiting)
 export async function POST(request) {
+  // IP Rate limiting: Max 5 inquiries per 10 minutes per IP
+  const ip = getClientIp(request);
+  const rateCheck = checkServerRateLimit(`contact:${ip}`, {
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!rateCheck.allowed) {
+    return rateLimitExceededResponse(
+      rateCheck.resetInSeconds,
+      "Too many contact submissions from your IP."
+    );
+  }
+
   try {
     await dbConnect();
     const body = await request.json();
@@ -32,10 +58,10 @@ export async function POST(request) {
     }
 
     const newMessage = await ContactMessage.create({
-      name: name.trim(),
+      name: sanitizeInput(name.trim()),
       email: email.trim().toLowerCase(),
-      subject: subject.trim(),
-      message: message.trim(),
+      subject: sanitizeInput(subject.trim()),
+      message: sanitizeInput(message.trim()),
     });
 
     return NextResponse.json(

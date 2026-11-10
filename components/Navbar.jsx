@@ -13,23 +13,33 @@ import {
   Clock, 
   Users, 
   LogOut, 
-  Lock 
+  Lock,
+  ChevronDown,
+  BookOpen,
+  Newspaper,
+  FileText,
+  Globe
 } from "lucide-react";
 import { useAdmin } from "@/context/AdminContext";
 import { getStoredProjects } from "@/lib/projectsStore";
 import Image from "next/image";
-import BrandLogo, { RotaractWheelIcon, SltcCampusIcon } from "@/components/BrandLogo";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
-  const [adminPasscode, setAdminPasscode] = useState("");
-  const [passError, setPassError] = useState("");
+
   const [pendingCount, setPendingCount] = useState(0);
 
   const pathname = usePathname();
   const { isAdmin, loginAdmin, logoutAdmin } = useAdmin();
+  const [mediaDropdownOpen, setMediaDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (pathname.startsWith("/media")) {
+      setMediaDropdownOpen(true);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -41,18 +51,6 @@ export default function Navbar() {
     const projects = getStoredProjects();
     setPendingCount(projects.filter((p) => p.status === "pending").length);
   }, [isOpen, isAdmin]);
-
-  const handleAdminModalLogin = async (e) => {
-    e.preventDefault();
-    const result = await loginAdmin(adminPasscode);
-    if (result.success) {
-      setShowAdminLoginModal(false);
-      setAdminPasscode("");
-      setPassError("");
-    } else {
-      setPassError(result.error);
-    }
-  };
 
   const navLinks = [
     { name: "HOME", href: "/" },
@@ -109,19 +107,20 @@ export default function Navbar() {
             {isAdmin ? (
               <button
                 onClick={logoutAdmin}
-                className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-200 hover:text-rose-400 transition-all inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-md"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-200 hover:text-rose-400 transition-all inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-md"
               >
                 <LogOut size={13} />
-                <span>LOGOUT</span>
+                <span className="hidden xs:inline">LOGOUT</span>
               </button>
             ) : (
-              <button
-                onClick={() => setShowAdminLoginModal(true)}
-                className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider bg-slate-900/80 border border-slate-700/80 hover:border-[#e6007e] text-slate-300 hover:text-white transition-all inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              <Link
+                href="/admin"
+                title="Admin Sign In"
+                className="hidden xs:inline-flex px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-slate-900/80 border border-slate-700/80 hover:border-[#e6007e] text-slate-300 hover:text-white transition-all items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 <Lock size={12} />
                 <span>ADMIN</span>
-              </button>
+              </Link>
             )}
 
             {/* Menu Drawer Toggle */}
@@ -135,47 +134,6 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-
-      {/* Admin Login Popup Modal */}
-      {showAdminLoginModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowAdminLoginModal(false)} />
-          <form
-            onSubmit={handleAdminModalLogin}
-            className="relative w-full max-w-sm p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-5 z-10 shadow-2xl text-center"
-          >
-            <div className="w-12 h-12 rounded-full bg-[#e6007e]/20 text-[#e6007e] mx-auto flex items-center justify-center border border-[#e6007e]/40">
-              <ShieldCheck size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-white">Admin Login</h3>
-              <p className="text-[11px] text-slate-400 mt-1">Enter your admin role passcode</p>
-            </div>
-
-            {passError && (
-              <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-semibold">
-                {passError}
-              </div>
-            )}
-
-            <input
-              type="password"
-              placeholder="Passcode (admin123 / project123)"
-              value={adminPasscode}
-              onChange={(e) => setAdminPasscode(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-[#e6007e]"
-              required
-            />
-
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider shadow-lg"
-            >
-              Enable Admin Mode
-            </button>
-          </form>
-        </div>
-      )}
 
       {/* Navigation Sidebar Drawer */}
       <AnimatePresence>
@@ -199,11 +157,11 @@ export default function Navbar() {
               <div className="flex items-center justify-between pb-6 border-b border-slate-800/80">
                 <div className="flex items-center">
                   <Image
-                    src="/images/rotaract-sltc-logo-transparent.png"
+                    src="/images/rotaract-sltc-clean-logo.png"
                     alt="Rotaract Club of Sri Lanka Technology Campus"
-                    width={180}
-                    height={50}
-                    className="h-7 w-auto object-contain drop-shadow-[0_0_12px_rgba(230,0,126,0.4)]"
+                    width={200}
+                    height={71}
+                    className="h-10 sm:h-11 w-auto object-contain drop-shadow-[0_0_14px_rgba(230,0,126,0.4)]"
                   />
                 </div>
 
@@ -219,6 +177,88 @@ export default function Navbar() {
               {/* Standard Links */}
               <nav className="flex flex-col gap-2 py-6">
                 {navLinks.map((link) => {
+                  if (link.name === "MEDIA") {
+                    const isMediaActive = pathname.startsWith("/media");
+                    return (
+                      <div key={link.name} className="flex flex-col">
+                        <button
+                          type="button"
+                          onClick={() => setMediaDropdownOpen(!mediaDropdownOpen)}
+                          className={`w-full px-4 py-3 rounded-xl text-xs font-bold tracking-wider transition-all flex items-center justify-between group cursor-pointer ${
+                            isMediaActive
+                              ? "bg-[#e6007e]/15 text-[#e6007e] border border-[#e6007e]/40 shadow-sm"
+                              : "text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span>MEDIA</span>
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2 h-2 rounded-full transition-colors ${
+                                isMediaActive ? "bg-[#e6007e]" : "bg-slate-700 group-hover:bg-[#e6007e]"
+                              }`}
+                            />
+                            <ChevronDown
+                              size={15}
+                              className={`transition-transform duration-200 ${
+                                mediaDropdownOpen ? "rotate-180 text-[#e6007e]" : "text-slate-400 group-hover:text-white"
+                              }`}
+                            />
+                          </div>
+                        </button>
+
+                        <AnimatePresence>
+                          {mediaDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="pl-3 pr-1 py-1 space-y-1 overflow-hidden"
+                            >
+                              <Link
+                                href="/media?category=blogs"
+                                onClick={() => setIsOpen(false)}
+                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                              >
+                                <BookOpen size={14} className="text-[#e6007e]" />
+                                <span>Blogs</span>
+                              </Link>
+
+                              <Link
+                                href="/media?category=articles"
+                                onClick={() => setIsOpen(false)}
+                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                              >
+                                <Newspaper size={14} className="text-[#e6007e]" />
+                                <span>Articles</span>
+                              </Link>
+
+                              <Link
+                                href="/media?category=bulletins"
+                                onClick={() => setIsOpen(false)}
+                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                              >
+                                <FileText size={14} className="text-[#e6007e]" />
+                                <span>Bulletins & Reports</span>
+                              </Link>
+
+                              <Link
+                                href="/media"
+                                onClick={() => setIsOpen(false)}
+                                className="px-3 py-1.5 rounded-xl text-[11px] font-medium text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                              >
+                                <Globe size={13} className="text-slate-500" />
+                                <span>All Media</span>
+                              </Link>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
                   const isActive = pathname === link.href;
                   return (
                     <Link
@@ -272,6 +312,18 @@ export default function Navbar() {
                         </Link>
                       );
                     })}
+                  </div>
+                )}
+                {!isAdmin && (
+                  <div className="pt-4 mt-2 border-t border-slate-800/80">
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full px-4 py-2.5 rounded-xl text-xs font-bold tracking-wider text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-[#e6007e] flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Lock size={13} className="text-[#e6007e]" />
+                      <span>Admin Portal Login</span>
+                    </Link>
                   </div>
                 )}
               </nav>

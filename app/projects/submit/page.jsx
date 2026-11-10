@@ -11,7 +11,7 @@ import Button from "@/components/ui/Button";
 import Link from "next/link";
 import Image from "next/image";
 import { 
-  Sparkles, 
+
   CheckCircle2, 
   Clock, 
   XCircle, 
@@ -36,7 +36,7 @@ export default function SubmitProjectPage() {
 
   const [formData, setFormData] = useState({
     title: "",
-    avenue: "Community Service",
+    avenue: "Community Service Avenue",
     date: new Date().toISOString().split("T")[0],
     impact: "100+ Participants",
     description: "",
@@ -190,7 +190,7 @@ export default function SubmitProjectPage() {
       {/* Header Title */}
       <div className="text-center max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-          <Sparkles size={12} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
           <span>MULTI-PHOTO ALBUM &amp; VIDEO UPLOADER</span>
         </div>
         <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
@@ -257,12 +257,14 @@ export default function SubmitProjectPage() {
                     onChange={(e) => setFormData({ ...formData, avenue: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
                   >
-                    <option value="Community Service">Community Service</option>
-                    <option value="Professional Development">Professional Development</option>
-                    <option value="Digital & IT">Digital & IT</option>
-                    <option value="Club Service">Club Service</option>
-                    <option value="International Service">International Service</option>
-                    <option value="Public Relations">Public Relations</option>
+                    <option value="Community Service Avenue">Community Service Avenue</option>
+                    <option value="Club Service Avenue">Club Service Avenue</option>
+                    <option value="Professional Development Avenue">Professional Development Avenue</option>
+                    <option value="Membership Development Avenue">Membership Development Avenue</option>
+                    <option value="International Service Avenue">International Service Avenue</option>
+                    <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                    <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                    <option value="Environmental Service Avenue">Environmental Service Avenue</option>
                   </select>
                 </div>
               </div>

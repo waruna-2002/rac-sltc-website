@@ -17,6 +17,15 @@ const MediaSchema = new mongoose.Schema(
     avenue: {
       type: String,
       enum: [
+        "Community Service Avenue",
+        "Club Service Avenue",
+        "Professional Development Avenue",
+        "Membership Development Avenue",
+        "International Service Avenue",
+        "Public Relations and Public Image",
+        "Sports and Recreational Activities",
+        "Environmental Service Avenue",
+        // Backwards compatibility
         "Community Service",
         "Professional Development",
         "Club Service",
@@ -25,7 +34,7 @@ const MediaSchema = new mongoose.Schema(
         "Sports",
         "General",
       ],
-      default: "General",
+      default: "Community Service Avenue",
     },
   },
   { timestamps: true }

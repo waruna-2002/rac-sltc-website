@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Zap, Edit3 } from "lucide-react";
+import { ArrowRight, Edit3 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
 import { useAdmin } from "@/context/AdminContext";
 
@@ -18,6 +18,15 @@ export default function HeroSection() {
 
   useEffect(() => {
     setSite(getStoredSiteContent());
+
+    const handleUpdate = (e) => {
+      if (e.detail) {
+        setSite((prev) => ({ ...prev, ...e.detail }));
+      }
+    };
+
+    window.addEventListener("rotaract_site_content_updated", handleUpdate);
+    return () => window.removeEventListener("rotaract_site_content_updated", handleUpdate);
   }, []);
 
   // Split title into words for the graceful drop-down entrance
@@ -62,7 +71,7 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-[94vh] flex items-center justify-center text-center px-4 sm:px-6 lg:px-8 pt-32 pb-24 overflow-hidden bg-[radial-gradient(ellipse_100%_80%_at_50%_-10%,#350b24_0%,#1b0513_40%,#0e030b_70%,#07080c_100%)] bg-[#07090e] group">
+    <section className="relative min-h-[94vh] flex items-center justify-center text-center px-4 sm:px-6 lg:px-8 pt-32 pb-24 overflow-hidden bg-[radial-gradient(ellipse_100%_80%_at_50%_-10%,rgba(53,11,36,0.55)_0%,rgba(27,5,19,0.35)_40%,transparent_80%)] group">
       {/* ADMIN IN-CONTEXT EDIT BADGE */}
       {isSuperAdmin && (
         <button
@@ -109,9 +118,9 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/90 border border-[#e6007e]/40 text-[11px] sm:text-xs font-bold tracking-[0.18em] text-[#ff66ab] uppercase mb-8 shadow-[0_0_20px_rgba(230,0,126,0.25)] backdrop-blur-md"
+          className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-[11px] sm:text-xs font-semibold tracking-[0.18em] text-slate-300 uppercase mb-8 backdrop-blur-md shadow-sm"
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#e6007e]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
           <span>{site.districtBadge}</span>
         </motion.div>
 
@@ -120,7 +129,7 @@ export default function HeroSection() {
           variants={headingContainerVariants}
           initial="hidden"
           animate="visible"
-          className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-light sm:font-normal tracking-[0.16em] sm:tracking-[0.24em] uppercase text-white leading-[1.22] max-w-5xl flex flex-col items-center select-none"
+          className="font-serif text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-light sm:font-normal tracking-[0.10em] xs:tracking-[0.16em] sm:tracking-[0.24em] uppercase text-white leading-[1.24] max-w-5xl flex flex-col items-center select-none"
           style={{
             fontFamily: "var(--font-display, 'Cinzel', 'Playfair Display', 'Cormorant Garamond', 'Didot', 'Bodoni MT', Georgia, serif)",
           }}
@@ -166,41 +175,20 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.45 }}
-          className="mt-6 text-xs sm:text-sm md:text-base text-slate-300 font-light max-w-2xl mx-auto leading-relaxed tracking-[0.12em] sm:tracking-[0.16em] uppercase"
+          className="mt-5 sm:mt-6 text-[11px] xs:text-xs sm:text-sm md:text-base text-slate-300 font-light max-w-2xl mx-auto leading-relaxed tracking-[0.10em] sm:tracking-[0.16em] uppercase px-2"
         >
           {site.heroSubtitle}
         </motion.p>
 
-        {/* Glowing Center-Emitting Horizontal Divider Line */}
+        {/* Refined Horizontal Divider Line */}
         <motion.div
           initial={{ opacity: 0, scaleX: 0 }}
           animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 1, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="relative my-7 sm:my-8 w-full max-w-xl mx-auto flex items-center justify-center select-none"
+          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative my-7 sm:my-8 w-full max-w-md mx-auto flex items-center justify-center select-none"
           aria-hidden="true"
         >
-          {/* Base Fading Background Track Line */}
-          <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-slate-600/40 to-transparent" />
-
-          {/* Concentrated Glowing Center Gradient */}
-          <div
-            className="absolute w-3/4 sm:w-2/3 h-[1.5px] bg-gradient-to-r from-transparent via-[#e6007e] to-transparent"
-            style={{
-              boxShadow: "0 0 16px 2px rgba(230, 0, 126, 0.85), 0 0 32px 4px rgba(230, 0, 126, 0.45)",
-            }}
-          />
-
-          {/* Specular White Center Beam */}
-          <div
-            className="absolute w-24 sm:w-36 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent"
-            style={{
-              filter: "drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 14px #ff4d94)",
-            }}
-          />
-
-          {/* Center Spark Diamond Node */}
-          <div className="absolute w-2.5 h-2.5 rounded-full bg-[#ff4da6] blur-[2px] opacity-90" />
-          <div className="absolute w-1 h-1 rounded-full bg-white shadow-[0_0_8px_#ffffff]" />
+          <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#e6007e]/50 to-transparent" />
         </motion.div>
 
         {/* Action Buttons */}
@@ -208,21 +196,20 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.65 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto"
+          className="flex flex-row items-center justify-center gap-2.5 sm:gap-4 w-full sm:w-auto max-w-sm sm:max-w-none px-2 sm:px-0"
         >
           <Link
             href="/join-us"
-            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#e6007e] hover:bg-[#c4006c] text-white font-bold text-xs sm:text-sm tracking-widest uppercase transition-all shadow-[0_0_30px_rgba(230,0,126,0.4)] hover:shadow-[0_0_45px_rgba(230,0,126,0.6)] flex items-center justify-center gap-2.5 group active:scale-95 border border-pink-400/30"
+            className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl bg-[#e6007e] hover:bg-[#c4006c] text-white font-bold text-[10px] xs:text-xs sm:text-sm tracking-wider sm:tracking-widest uppercase transition-all shadow-[0_0_20px_rgba(230,0,126,0.35)] sm:shadow-[0_0_30px_rgba(230,0,126,0.4)] hover:shadow-[0_0_45px_rgba(230,0,126,0.6)] flex items-center justify-center gap-1.5 sm:gap-2.5 group active:scale-95 border border-pink-400/30 whitespace-nowrap"
           >
             <span>{site.heroButtonText}</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1.5 transition-transform shrink-0" />
           </Link>
 
           <Link
             href="/projects"
-            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-slate-500 font-bold text-xs sm:text-sm tracking-widest uppercase transition-all flex items-center justify-center gap-2 backdrop-blur-md active:scale-95 shadow-lg"
+            className="flex-1 sm:flex-initial px-3.5 py-2.5 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-slate-500 font-bold text-[10px] xs:text-xs sm:text-sm tracking-wider sm:tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 sm:gap-2 backdrop-blur-md active:scale-95 shadow-lg whitespace-nowrap"
           >
-            <Zap className="w-4 h-4 text-cyan-400" />
             <span>EXPLORE PROJECTS</span>
           </Link>
         </motion.div>

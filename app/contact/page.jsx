@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import { MapPin, Mail, Phone, Send, Sparkles, Edit3 } from "lucide-react";
+import { MapPin, Mail, Phone, Send, CheckCircle2, Edit3 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
 import { useAdmin } from "@/context/AdminContext";
 
@@ -61,7 +61,7 @@ export default function ContactPage() {
 
       <div className="text-center max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-          <Sparkles size={12} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
           <span>GET IN TOUCH WITH US</span>
         </div>
         <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
@@ -106,8 +106,8 @@ export default function ContactPage() {
         <div className="p-8 sm:p-10 rounded-3xl bg-[#0c1017] border border-slate-800">
           {sent ? (
             <div className="text-center py-12 space-y-3">
-              <div className="w-12 h-12 rounded-full bg-[#e6007e]/20 text-[#e6007e] mx-auto flex items-center justify-center">
-                <Sparkles size={24} />
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
+                <CheckCircle2 size={24} />
               </div>
               <h4 className="text-xl font-bold text-white">Message Sent Successfully!</h4>
               <p className="text-xs text-slate-400">Our Secretarial team will get back to your email promptly.</p>

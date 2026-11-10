@@ -1,58 +1,66 @@
 [
   {
     "id": "community-service",
-    "title": "Community Service",
+    "title": "Community Service Avenue",
     "tagline": "Caring for Communities Everywhere",
-    "description": "Fostering environmental conservation, health drives, educational support, and disaster relief across local communities.",
+    "subtitle": "CARING FOR COMMUNITIES EVERYWHERE",
+    "description": "Fostering health drives, educational support, underprivileged school aids, and disaster relief across local communities.",
+    "icon": "HeartHandshake"
+  },
+  {
+    "id": "club-service",
+    "title": "Club Service Avenue",
+    "tagline": "Unity Through Fellowship & Service",
+    "subtitle": "UNITY THROUGH FELLOWSHIP & SERVICE",
+    "description": "Strengthening bonds among members through fellowship trips, social gatherings, club assemblies, and university-wide team events.",
     "icon": "Users"
   },
   {
     "id": "professional-development",
-    "title": "Professional Development",
+    "title": "Professional Development Avenue",
     "tagline": "Skills for Success, Growth for Life",
-    "description": "Empowering undergraduates with leadership skills, corporate etiquette, CV writing, and tech workshops.",
+    "subtitle": "SKILLS FOR SUCCESS, GROWTH FOR LIFE",
+    "description": "Empowering undergraduates with leadership skills, corporate etiquette, CV writing, networking, and industry workshops.",
     "icon": "Briefcase"
   },
   {
-    "id": "club-service",
-    "title": "Club Service",
-    "tagline": "Unity Through Service & Fellowship",
-    "description": "Strengthening bonds among members through fellowship trips, social gatherings, and university-wide team events.",
-    "icon": "HeartHandshake"
+    "id": "membership-development",
+    "title": "Membership Development Avenue",
+    "tagline": "Empowering & Expanding Our Family",
+    "subtitle": "EMPOWERING & EXPANDING OUR FAMILY",
+    "description": "Recruiting passionate undergraduates, onboarding new rotaractors, conducting mentorship, and fostering member engagement.",
+    "icon": "UserPlus"
   },
   {
     "id": "international-service",
-    "title": "International Service",
+    "title": "International Service Avenue",
     "tagline": "Connecting Continents & Cultures",
-    "description": "Collaborating with twin clubs globally, promoting cultural exchange, and supporting international initiatives.",
+    "subtitle": "CONNECTING CONTINENTS & CULTURES",
+    "description": "Collaborating with twin clubs globally, promoting cultural exchange, peace initiatives, and supporting international projects.",
     "icon": "Globe2"
   },
   {
-    "id": "digital-it",
-    "title": "Digital & IT",
-    "tagline": "Innovating Tomorrow, Connecting Today",
-    "description": "Developing tech solutions, web systems, cybersecurity awareness campaigns, and bridging digital gaps.",
-    "icon": "Code"
-  },
-  {
-    "id": "sports-recreation",
-    "title": "Sports & Recreation",
-    "tagline": "Fitness for All, Unity in Play",
-    "description": "Organizing sports encounters, e-sports tournaments, and promoting health & fitness across faculties.",
-    "icon": "Trophy"
-  },
-  {
     "id": "public-relations",
-    "title": "Public Relations",
-    "tagline": "Amplifying Impact & Storytelling",
-    "description": "Managing media presence, social media storytelling, press releases, and building the Rotaract brand.",
+    "title": "Public Relations and Public Image",
+    "tagline": "Amplifying Impact & Digital Storytelling",
+    "subtitle": "AMPLIFYING IMPACT & DIGITAL STORYTELLING",
+    "description": "Managing media presence, social media storytelling, press releases, photography, and building the Rotaract brand.",
     "icon": "Megaphone"
   },
   {
-    "id": "partnerships-finance",
-    "title": "Fundraising & Partnerships",
-    "tagline": "Building Bridges, Creating Change",
-    "description": "Driving corporate sponsorships, crowdfunding, and sustaining club projects through innovative fundraising.",
-    "icon": "DollarSign"
+    "id": "sports-recreation",
+    "title": "Sports and Recreational Activities",
+    "tagline": "Fitness for All, Unity in Play",
+    "subtitle": "FITNESS FOR ALL, UNITY IN PLAY",
+    "description": "Organizing athletic encounters, cricket fiestas, e-sports tournaments, and promoting health & wellness across faculties.",
+    "icon": "Trophy"
+  },
+  {
+    "id": "environmental-service",
+    "title": "Environmental Service Avenue",
+    "tagline": "Sustainability & Planet Conservation",
+    "subtitle": "SUSTAINABILITY & PLANET CONSERVATION",
+    "description": "Leading tree planting drives, beach cleanups, climate awareness campaigns, and eco-friendly campus sustainability projects.",
+    "icon": "Leaf"
   }
 ]

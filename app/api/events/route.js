@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Event from "@/models/Event";
+import { requireAdmin } from "@/lib/serverAuth";
 
 const initialEvents = [
   {
     title: "SLTC Youth Leadership Conclave 2026",
     subtitle: "Empowering Next-Gen Visionaries",
     description: "An intensive full-day leadership summit featuring industry veterans, interactive breakout circles, and ethical leadership development modules tailored for university undergraduates.",
-    avenue: "Professional Development",
+    avenue: "Professional Development Avenue",
     date: "2026-11-14",
     time: "09:00 AM - 04:30 PM",
     location: "SLTC Main Auditorium, Padukka",
@@ -22,7 +23,7 @@ const initialEvents = [
     title: "EcoPulse: Mangrove & Coastal Restoration",
     subtitle: "Conserving Sri Lanka's Coastline",
     description: "Hands-on environmental conservation drive partnering with local environmentalists to restore coastal mangrove ecosystems, collect marine plastic, and conduct community awareness workshops.",
-    avenue: "Community Service",
+    avenue: "Environmental Service Avenue",
     date: "2026-11-28",
     time: "06:30 AM - 01:00 PM",
     location: "Kalutara Estuary & Coastal Reserve",
@@ -37,7 +38,7 @@ const initialEvents = [
     title: "CodeCraft 2.0: AI For Good Hackathon",
     subtitle: "Build Solutions for Social Impact",
     description: "A fast-paced 24-hour innovation challenge where student developers, UI/UX designers, and problem solvers collaborate to create open-source software addressing grassroots challenges.",
-    avenue: "Digital & IT",
+    avenue: "Professional Development Avenue",
     date: "2026-12-12",
     time: "08:30 AM Onwards",
     location: "SLTC Computing & Tech Park",
@@ -50,7 +51,7 @@ const initialEvents = [
   },
 ];
 
-// GET /api/events - Retrieve upcoming club events
+// GET /api/events - Retrieve upcoming club events (Public)
 export async function GET(request) {
   try {
     await dbConnect();
@@ -66,11 +67,11 @@ export async function GET(request) {
     const status = searchParams.get("status") || "upcoming";
 
     const query = {};
+    if (status !== "all") {
+      query.status = status;
+    }
     if (avenue && avenue !== "All") {
       query.avenue = avenue;
-    }
-    if (status && status !== "all") {
-      query.status = status;
     }
 
     const events = await Event.find(query).sort({ date: 1 });
@@ -82,7 +83,7 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("GET /api/events error:", error);
-    // If DB is offline, return fallback initial events to maintain frontend stability
+    // Return initial fallback data if MongoDB isn't reachable yet
     return NextResponse.json({
       success: true,
       count: initialEvents.length,
@@ -92,8 +93,13 @@ export async function GET(request) {
   }
 }
 
-// POST /api/events - Create a new event
+// POST /api/events - Create a new event (Super Admin Only)
 export async function POST(request) {
+  const auth = requireAdmin(request, ["super_admin"]);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     await dbConnect();
     const body = await request.json();
@@ -111,7 +117,7 @@ export async function POST(request) {
       title: title.trim(),
       subtitle: body.subtitle || "",
       description: description.trim(),
-      avenue: avenue || "General",
+      avenue: avenue || "Community Service Avenue",
       date,
       time: time || "TBD",
       location: location || "SLTC Research University",

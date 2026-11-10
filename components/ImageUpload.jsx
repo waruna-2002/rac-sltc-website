@@ -6,7 +6,7 @@ import { UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
 export default function ImageUpload({ onUploadSuccess }) {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
-  const [avenue, setAvenue] = useState("Community Service");
+  const [avenue, setAvenue] = useState("Community Service Avenue");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -71,11 +71,14 @@ export default function ImageUpload({ onUploadSuccess }) {
           onChange={(e) => setAvenue(e.target.value)}
           className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-[#e6007e] outline-none"
         >
-          <option value="Community Service">Community Service</option>
-          <option value="Professional Development">Professional Development</option>
-          <option value="Digital & IT">Digital & IT</option>
-          <option value="Club Service">Club Service</option>
-          <option value="International Service">International Service</option>
+          <option value="Community Service Avenue">Community Service Avenue</option>
+          <option value="Club Service Avenue">Club Service Avenue</option>
+          <option value="Professional Development Avenue">Professional Development Avenue</option>
+          <option value="Membership Development Avenue">Membership Development Avenue</option>
+          <option value="International Service Avenue">International Service Avenue</option>
+          <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+          <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+          <option value="Environmental Service Avenue">Environmental Service Avenue</option>
         </select>
       </div>
 

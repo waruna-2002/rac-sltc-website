@@ -11,6 +11,8 @@ import {
   Trophy, 
   Megaphone, 
   DollarSign,
+  UserPlus,
+  Leaf,
   Edit3
 } from "lucide-react";
 import { useAdmin } from "@/context/AdminContext";
@@ -24,11 +26,14 @@ const iconMap = {
   Trophy,
   Megaphone,
   DollarSign,
+  UserPlus,
+  Leaf,
 };
 
-export default function AvenueCard({ id, title, tagline, description, icon, onEdit }) {
+export default function AvenueCard({ id, title, tagline, subtitle, description, icon, onEdit }) {
   const { isAdmin, isSuperAdmin } = useAdmin();
   const IconComponent = iconMap[icon] || Users;
+  const displayTagline = tagline || subtitle || "Avenue of Service";
 
   return (
     <motion.div
@@ -58,7 +63,7 @@ export default function AvenueCard({ id, title, tagline, description, icon, onEd
           {title}
         </h3>
         <p className="text-[11px] font-semibold text-cyan-400 mb-3 tracking-wider uppercase">
-          {tagline}
+          {displayTagline}
         </p>
         <p className="text-slate-400 text-xs leading-relaxed">
           {description}

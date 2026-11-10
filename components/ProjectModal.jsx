@@ -9,7 +9,7 @@ import {
   Calendar, 
   Tag, 
   ArrowRight, 
-  Sparkles, 
+
   CheckCircle2, 
   Users, 
   Video, 
@@ -136,7 +136,6 @@ export default function ProjectModal({ project, onClose }) {
 
             <div className="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed font-light">
               <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles size={14} className="text-[#e6007e]" />
                 <span>Project Overview</span>
               </h4>
               <p>{project.fullDescription || project.description}</p>

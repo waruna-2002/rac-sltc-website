@@ -6,13 +6,12 @@ import { motion } from "framer-motion";
 import { 
   MapPin, 
   Mail, 
-  Phone, 
   ArrowRight,
   Heart
 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
 import Image from "next/image";
-import { RotaractWheelIcon, SltcCampusIcon } from "@/components/BrandLogo";
+
 
 // Self-contained Social Media SVG Icons
 const Icons = {
@@ -52,6 +51,15 @@ export default function Footer() {
 
   useEffect(() => {
     setSite(getStoredSiteContent());
+
+    const handleUpdate = (e) => {
+      if (e.detail) {
+        setSite((prev) => ({ ...prev, ...e.detail }));
+      }
+    };
+
+    window.addEventListener("rotaract_site_content_updated", handleUpdate);
+    return () => window.removeEventListener("rotaract_site_content_updated", handleUpdate);
   }, []);
 
   const handleSubscribe = (e) => {
@@ -90,11 +98,11 @@ export default function Footer() {
             <div>
               <div className="mb-4">
                 <Image
-                  src="/images/rotaract-sltc-logo-transparent.png"
+                  src="/images/rotaract-sltc-clean-logo.png"
                   alt="Rotaract Club of Sri Lanka Technology Campus"
-                  width={220}
-                  height={62}
-                  className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(230,0,126,0.35)]"
+                  width={240}
+                  height={86}
+                  className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_0_16px_rgba(230,0,126,0.35)]"
                 />
                 <p className="text-[11px] text-slate-400 tracking-widest uppercase mt-2">District 3220 • Sri Lanka &amp; Maldives</p>
               </div>
@@ -156,12 +164,6 @@ export default function Footer() {
                 <Mail className="w-5 h-5 text-[#e6007e] shrink-0" />
                 <a href={`mailto:${site.email}`} className="hover:text-white transition-colors">
                   {site.email}
-                </a>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-[#e6007e] shrink-0" />
-                <a href={`tel:${site.phone}`} className="hover:text-white transition-colors">
-                  {site.phone}
                 </a>
               </li>
             </ul>

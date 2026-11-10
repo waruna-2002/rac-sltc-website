@@ -17,6 +17,15 @@ const ProjectSchema = new mongoose.Schema(
       type: String,
       required: [true, "Service avenue is required"],
       enum: [
+        "Community Service Avenue",
+        "Club Service Avenue",
+        "Professional Development Avenue",
+        "Membership Development Avenue",
+        "International Service Avenue",
+        "Public Relations and Public Image",
+        "Sports and Recreational Activities",
+        "Environmental Service Avenue",
+        // Backwards compatibility for existing legacy entries
         "Community Service",
         "Professional Development",
         "Digital & IT",
@@ -26,7 +35,7 @@ const ProjectSchema = new mongoose.Schema(
         "Environmental",
         "General",
       ],
-      default: "Community Service",
+      default: "Community Service Avenue",
     },
     date: {
       type: String,

@@ -18,6 +18,15 @@ const EventSchema = new mongoose.Schema(
     avenue: {
       type: String,
       enum: [
+        "Community Service Avenue",
+        "Club Service Avenue",
+        "Professional Development Avenue",
+        "Membership Development Avenue",
+        "International Service Avenue",
+        "Public Relations and Public Image",
+        "Sports and Recreational Activities",
+        "Environmental Service Avenue",
+        // Backwards compatibility
         "Community Service",
         "Professional Development",
         "Digital & IT",
@@ -27,7 +36,7 @@ const EventSchema = new mongoose.Schema(
         "Environmental",
         "General",
       ],
-      default: "General",
+      default: "Community Service Avenue",
     },
     date: {
       type: String,

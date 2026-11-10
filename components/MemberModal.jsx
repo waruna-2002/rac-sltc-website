@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Crown, Mail, Award, GraduationCap, Sparkles } from "lucide-react";
+import { X, Crown, Mail, Award, GraduationCap } from "lucide-react";
 
 const LinkedinIcon = () => (
   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -107,7 +107,6 @@ export default function MemberModal({ member, onClose }) {
           <div className="mt-6 pt-6 border-t border-slate-800/80 space-y-4 text-xs text-slate-300 leading-relaxed relative z-10">
             <div>
               <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Sparkles size={13} className="text-[#e6007e]" />
                 <span>About Leader</span>
               </h4>
               <p className="font-light text-slate-300">

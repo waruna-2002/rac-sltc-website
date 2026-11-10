@@ -5,7 +5,7 @@ import ProjectCard from "@/components/ProjectCard";
 import ProjectModal from "@/components/ProjectModal";
 import { getStoredProjects } from "@/lib/projectsStore";
 import Link from "next/link";
-import { Search, Sparkles, PlusCircle } from "lucide-react";
+import { Search, PlusCircle } from "lucide-react";
 
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
@@ -30,11 +30,14 @@ export default function ProjectsPage() {
 
   const avenues = [
     "All",
-    "Community Service",
-    "Professional Development",
-    "Digital & IT",
-    "Club Service",
-    "International Service"
+    "Community Service Avenue",
+    "Club Service Avenue",
+    "Professional Development Avenue",
+    "Membership Development Avenue",
+    "International Service Avenue",
+    "Public Relations and Public Image",
+    "Sports and Recreational Activities",
+    "Environmental Service Avenue",
   ];
 
   // Show only approved projects on public view
@@ -43,7 +46,11 @@ export default function ProjectsPage() {
   const filteredProjects = approvedProjects.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) || 
                           p.description.toLowerCase().includes(search.toLowerCase());
-    const matchesAvenue = selectedAvenue === "All" || p.avenue === selectedAvenue;
+    const matchesAvenue =
+      selectedAvenue === "All" ||
+      p.avenue === selectedAvenue ||
+      (p.avenue && selectedAvenue.toLowerCase().includes(p.avenue.toLowerCase())) ||
+      (p.avenue && p.avenue.toLowerCase().includes(selectedAvenue.toLowerCase().replace(" avenue", "")));
     return matchesSearch && matchesAvenue;
   });
 
@@ -52,7 +59,7 @@ export default function ProjectsPage() {
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="text-center md:text-left max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-            <Sparkles size={12} />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
             <span>PORTFOLIO OF IMPACT</span>
           </div>
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">

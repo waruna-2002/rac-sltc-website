@@ -7,7 +7,7 @@ import {
   Calendar, 
   Clock, 
   MapPin, 
-  Sparkles, 
+
   ArrowRight, 
   Tag, 
   CheckCircle,
@@ -23,10 +23,14 @@ export default function UpcomingEventsSection() {
 
   const avenues = [
     "All",
-    "Community Service",
-    "Professional Development",
-    "Digital & IT",
-    "Club Service",
+    "Community Service Avenue",
+    "Club Service Avenue",
+    "Professional Development Avenue",
+    "Membership Development Avenue",
+    "International Service Avenue",
+    "Public Relations and Public Image",
+    "Sports and Recreational Activities",
+    "Environmental Service Avenue",
   ];
 
   useEffect(() => {
@@ -49,7 +53,11 @@ export default function UpcomingEventsSection() {
 
   const filteredEvents = events.filter((ev) => {
     if (selectedAvenue === "All") return true;
-    return ev.avenue === selectedAvenue;
+    return (
+      ev.avenue === selectedAvenue ||
+      (ev.avenue && selectedAvenue.toLowerCase().includes(ev.avenue.toLowerCase())) ||
+      (ev.avenue && ev.avenue.toLowerCase().includes(selectedAvenue.toLowerCase().replace(" avenue", "")))
+    );
   });
 
   const formatDateParts = (dateString) => {
@@ -76,7 +84,6 @@ export default function UpcomingEventsSection() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4 relative z-10">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-            <Sparkles size={12} />
             <span>WHAT&apos;S HAPPENING</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">

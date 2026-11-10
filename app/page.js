@@ -14,7 +14,7 @@ import { useAdmin } from "@/context/AdminContext";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, Eye, Target, Sparkles, Rocket, Edit3, Save, X, Upload } from "lucide-react";
+import { ArrowRight, Eye, Target, Rocket, Edit3, Save, X, Upload } from "lucide-react";
 
 export default function HomePage() {
   const { isAdmin, isSuperAdmin } = useAdmin();
@@ -73,7 +73,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-20 pb-20 bg-[#07090e] overflow-hidden">
+    <div className="space-y-20 pb-20 bg-transparent overflow-hidden">
       {/* 1. Hero Banner */}
       <HeroSection />
 
@@ -104,7 +104,6 @@ export default function HomePage() {
             className="lg:col-span-6"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-              <Sparkles size={12} />
               <span>WHO WE ARE</span>
             </div>
 
@@ -161,7 +160,7 @@ export default function HomePage() {
               </label>
             )}
 
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#e6007e] to-cyan-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition duration-500" />
+            <div className="absolute -inset-1 bg-[#e6007e]/10 rounded-2xl blur-md transition duration-500" />
             <div className="relative h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900">
               <Image
                 src={siteContent.whoWeAreImage || "/images/hero.jpg"}
@@ -188,7 +187,7 @@ export default function HomePage() {
             <span>OUR AVENUES OF SERVICE</span>
           </div>
           <h3 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
-            Areas of <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Impact</span>
+            Areas of <span className="text-[#e6007e]">Impact</span>
           </h3>
           <p className="text-slate-400 text-sm sm:text-base mt-3 font-light">
             Explore the core avenues through which our members drive positive transformation.
@@ -211,11 +210,10 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-              <Sparkles size={12} />
               <span>PORTFOLIO</span>
             </div>
             <h3 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
-              Featured <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Projects</span>
+              Featured <span className="text-[#e6007e]">Projects</span>
             </h3>
           </div>
 
@@ -273,8 +271,8 @@ export default function HomePage() {
               <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Tagline</label>
               <input
                 type="text"
-                value={editingAvenue.subtitle}
-                onChange={(e) => setEditingAvenue({ ...editingAvenue, subtitle: e.target.value })}
+                value={editingAvenue.subtitle || editingAvenue.tagline || ""}
+                onChange={(e) => setEditingAvenue({ ...editingAvenue, subtitle: e.target.value, tagline: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
                 required
               />

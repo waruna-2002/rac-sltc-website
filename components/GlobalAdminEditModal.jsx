@@ -6,7 +6,7 @@ import { getStoredSiteContent, saveStoredSiteContent } from "@/lib/siteStore";
 import { getStoredStats, saveStoredStats } from "@/lib/statsStore";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import { X, Save, Edit3, Sparkles } from "lucide-react";
+import { X, Save, Edit3 } from "lucide-react";
 
 export default function GlobalAdminEditModal() {
   const { editModalConfig, closeEditModal, isSuperAdmin } = useAdmin();
