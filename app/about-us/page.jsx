@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Target, Eye, Award, CheckCircle, Building2, Globe2, Edit3 } from "lucide-react";
+import { Target, Eye, Award, CheckCircle, Building2, Globe2 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
-import { useAdmin } from "@/context/AdminContext";
 
 export default function AboutUsPage() {
-  const { isAdmin, isSuperAdmin, openEditModal } = useAdmin();
   const [site, setSite] = useState({
     aboutHistory: "Chartered under Rotary International District 3220, the Rotaract Club of SLTC Research University has grown into one of the most vibrant youth organizations in Sri Lanka. Our members drive sustainable development, professional skill enhancement, and youth empowerment.",
     charterYear: "2020",
@@ -18,27 +16,33 @@ export default function AboutUsPage() {
 
   useEffect(() => {
     setSite(getStoredSiteContent());
+
+    const handleUpdate = (e) => {
+      if (e.detail) {
+        setSite((prev) => ({ ...prev, ...e.detail }));
+      }
+    };
+    window.addEventListener("rotaract_site_content_updated", handleUpdate);
+
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSite((prev) => ({ ...prev, ...json.data }));
+        }
+      })
+      .catch((err) => console.log("About Us settings fallback:", err));
+
+    return () => window.removeEventListener("rotaract_site_content_updated", handleUpdate);
   }, []);
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16 bg-[#07090e] relative">
-      {/* ADMIN IN-CONTEXT EDIT BADGE */}
-      {isSuperAdmin && (
-        <button
-          onClick={() => openEditModal("about")}
-          className="absolute top-24 right-6 z-30 px-3.5 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer"
-        >
-          <Edit3 size={14} />
-          <span>Edit About Us Section</span>
-        </button>
-      )}
-
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
-          <span>ABOUT OUR CLUB</span>
-        </div>
+        <p className="text-xs font-bold tracking-[0.2em] text-[#e6007e] uppercase mb-3">
+          About Our Club
+        </p>
         <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
           Legacy of <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Service</span>
         </h1>

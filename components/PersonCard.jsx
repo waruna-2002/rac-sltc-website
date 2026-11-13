@@ -3,8 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Crown, UserCheck, Edit3 } from "lucide-react";
-import { useAdmin } from "@/context/AdminContext";
+import { Crown, UserCheck } from "lucide-react";
 
 const LinkedinIcon = () => (
   <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -19,7 +18,6 @@ const InstagramIcon = () => (
 );
 
 export default function PersonCard({ id, name, role, faculty, image, linkedin, instagram, onClick }) {
-  const { isAdmin, isSuperAdmin } = useAdmin();
   const isPresident = role && role.trim().toLowerCase() === "president";
   const hasCustomImage = image && image !== "/images/team/placeholder.jpg";
 
@@ -34,22 +32,10 @@ export default function PersonCard({ id, name, role, faculty, image, linkedin, i
           : "bg-[#0c1017]/80 border border-slate-800/90 hover:border-[#e6007e]/60 shadow-xl hover:shadow-[0_0_25px_rgba(230,0,126,0.2)]"
       }`}
     >
-      {/* ADMIN IN-CONTEXT EDIT BADGE ON PERSON CARD */}
-      {isSuperAdmin && (
-        <a
-          href="/admin"
-          onClick={(e) => e.stopPropagation()}
-          className="absolute top-3 right-3 z-30 px-2.5 py-1 rounded-full bg-[#e6007e] text-white text-[10px] font-bold uppercase tracking-wider shadow-md hover:scale-105 transition-all flex items-center gap-1 border border-pink-300/40"
-        >
-          <Edit3 size={11} />
-          <span>Edit Member</span>
-        </a>
-      )}
-
-      {/* President Top Cyber Highlight Badge */}
+      {/* President Highlight Badge */}
       {isPresident && (
-        <div className="mb-4 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#e6007e] text-white text-[10px] font-black uppercase tracking-widest shadow-md shadow-[#e6007e]/50 border border-pink-400/40">
-          <Crown size={12} className="text-yellow-300" />
+        <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6007e] text-white text-[10px] font-bold uppercase tracking-widest">
+          <Crown size={12} className="text-amber-300" />
           <span>CLUB PRESIDENT</span>
         </div>
       )}

@@ -138,8 +138,6 @@ export async function POST(request) {
       tempToken: otpData.tempToken,
       reason: trustCheck.reason,
       message: statusNote,
-      // For instant local developer testing without requiring SMTP setup
-      ...(process.env.NODE_ENV !== "production" ? { devOtp: otpData.code } : {}),
     });
   } catch (error) {
     console.error("POST /api/auth/login error:", error);

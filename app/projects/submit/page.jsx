@@ -11,19 +11,14 @@ import Button from "@/components/ui/Button";
 import Link from "next/link";
 import Image from "next/image";
 import { 
-
   CheckCircle2, 
   Clock, 
   XCircle, 
   Edit3, 
   ArrowLeft, 
-  FolderPlus, 
-  User, 
-  Send,
-  Upload,
-  Video,
-  FileImage,
-  Trash2
+  Trash2, 
+  AlertCircle, 
+  Loader2 
 } from "lucide-react";
 
 export default function SubmitProjectPage() {
@@ -33,54 +28,78 @@ export default function SubmitProjectPage() {
   const [myEmail, setMyEmail] = useState("");
   const [projectsList, setProjectsList] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [isUploadingProposal, setIsUploadingProposal] = useState(false);
+  const [isUploadingReport, setIsUploadingReport] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     title: "",
     avenue: "Community Service Avenue",
     date: new Date().toISOString().split("T")[0],
     impact: "100+ Participants",
     description: "",
-    fullDescription: "",
-    image: "/images/projects/project1.jpg",
-    images: ["/images/projects/project1.jpg"],
-    videoUrl: "",
+    image: "",
+    images: [],
+    driveLink: "",
+    proposalPdf: "",
+    proposalPdfName: "",
+    reportPdf: "",
+    reportPdfName: "",
+    projectChair: "",
+    projectSecretary: "",
+    projectTreasurer: "",
     submittedBy: "",
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
 
   useEffect(() => {
     setProjectsList(getStoredProjects());
     fetch("/api/projects?status=all")
       .then((res) => res.json())
       .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.success && Array.isArray(json.data)) {
           setProjectsList(json.data);
         }
       })
       .catch((err) => console.log("Projects API fetch fallback:", err));
   }, [submitted, editingProject]);
 
-  // Handle direct file upload for MULTIPLE photos & videos
+  // Handle direct file upload for SHOWCASE PHOTOS (Min 1, Max 3)
   const handleMultipleFileUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+    setFormError("");
 
-    files.forEach((file) => {
+    const currentCount = formData.images ? formData.images.length : 0;
+    const remainingSlots = 3 - currentCount;
+
+    if (remainingSlots <= 0) {
+      setFormError("Maximum 3 showcase photos allowed on website. Please remove a photo first or add extra photos to your Google Drive link.");
+      return;
+    }
+
+    if (files.length > remainingSlots) {
+      setFormError(`Notice: Only up to 3 showcase photos are allowed for website display. The first ${remainingSlots} photo(s) were selected. Full album must be placed in the Google Drive folder.`);
+    }
+
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    filesToProcess.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result;
         if (typeof dataUrl === "string") {
-          if (file.type.startsWith("video/")) {
-            setFormData((prev) => ({ ...prev, videoUrl: dataUrl }));
-          } else {
-            setFormData((prev) => {
-              const updatedImages = [...(prev.images || []), dataUrl];
-              return {
-                ...prev,
-                image: updatedImages[0], // Main cover image is 1st photo
-                images: updatedImages,
-              };
-            });
-          }
+          setFormData((prev) => {
+            const current = prev.images || [];
+            if (current.length >= 3) return prev;
+            const updated = [...current, dataUrl].slice(0, 3);
+            return {
+              ...prev,
+              image: updated[0] || "",
+              images: updated,
+            };
+          });
         }
       };
       reader.readAsDataURL(file);
@@ -89,22 +108,143 @@ export default function SubmitProjectPage() {
 
   const removePhotoFromGallery = (indexToRemove) => {
     setFormData((prev) => {
-      const filtered = prev.images.filter((_, idx) => idx !== indexToRemove);
+      const filtered = (prev.images || []).filter((_, idx) => idx !== indexToRemove);
       return {
         ...prev,
-        image: filtered.length > 0 ? filtered[0] : "/images/projects/project1.jpg",
+        image: filtered.length > 0 ? filtered[0] : "",
         images: filtered,
       };
     });
   };
 
+  // Upload Project Proposal or Project Report PDF (Admin only access)
+  const handlePdfUpload = async (e, docType) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setFormError("Only PDF documents (.pdf) are allowed for Project Proposals and Reports.");
+      return;
+    }
+
+    if (file.size > 25 * 1024 * 1024) {
+      setFormError("PDF file size must not exceed 25 MB.");
+      return;
+    }
+
+    setFormError("");
+    if (docType === "proposal") setIsUploadingProposal(true);
+    else setIsUploadingReport(true);
+
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
+      uploadData.append("docType", docType);
+
+      const res = await fetch("/api/upload/project-doc", {
+        method: "POST",
+        body: uploadData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        if (docType === "proposal") {
+          setFormData((prev) => ({
+            ...prev,
+            proposalPdf: data.url,
+            proposalPdfName: data.fileName || file.name,
+          }));
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            reportPdf: data.url,
+            reportPdfName: data.fileName || file.name,
+          }));
+        }
+      } else {
+        // Fallback: Read as data URL
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result;
+          if (docType === "proposal") {
+            setFormData((prev) => ({
+              ...prev,
+              proposalPdf: String(dataUrl),
+              proposalPdfName: file.name,
+            }));
+          } else {
+            setFormData((prev) => ({
+              ...prev,
+              reportPdf: String(dataUrl),
+              reportPdfName: file.name,
+            }));
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      console.warn("Upload PDF API error, reading as fallback:", err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result;
+        if (docType === "proposal") {
+          setFormData((prev) => ({
+            ...prev,
+            proposalPdf: String(dataUrl),
+            proposalPdfName: file.name,
+          }));
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            reportPdf: String(dataUrl),
+            reportPdfName: file.name,
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      if (docType === "proposal") setIsUploadingProposal(false);
+      else setIsUploadingReport(false);
+    }
+  };
+
+  const removeProposalPdf = () => {
+    setFormData((prev) => ({ ...prev, proposalPdf: "", proposalPdfName: "" }));
+  };
+
+  const removeReportPdf = () => {
+    setFormData((prev) => ({ ...prev, reportPdf: "", reportPdfName: "" }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
+
+    if (!formData.images || formData.images.length === 0) {
+      setFormError("Please upload at least 1 showcase photo for the website (Maximum 3 photos allowed).");
+      return;
+    }
+
+    if (formData.images.length > 3) {
+      setFormError("Maximum 3 showcase photos are allowed for website display. Please remove extra photos.");
+      return;
+    }
+
+    if (!formData.driveLink || !formData.driveLink.trim()) {
+      setFormError("Google Drive Folder link is mandatory. Please provide a link with 'Anyone with the link can view' permission.");
+      return;
+    }
+
+    if (!formData.projectChair?.trim() || !formData.projectSecretary?.trim() || !formData.projectTreasurer?.trim()) {
+      setFormError("Please provide all Project Committee leads: Project Chair, Project Secretary, and Project Treasurer.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (editingProject) {
-        updateProject(editingProject.id, formData);
-        await fetch(`/api/projects/${editingProject.id || editingProject._id}`, {
+        const targetId = editingProject.id || editingProject._id;
+        updateProject(targetId, formData);
+        await fetch(`/api/projects/${targetId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -122,6 +262,7 @@ export default function SubmitProjectPage() {
       setMyEmail(formData.submittedBy);
     } catch (err) {
       console.error("Submit error:", err);
+      setFormError("Network error while submitting proposal.");
     } finally {
       setIsSubmitting(false);
     }
@@ -130,15 +271,21 @@ export default function SubmitProjectPage() {
   const startEdit = (proj) => {
     setEditingProject(proj);
     setFormData({
-      title: proj.title,
-      avenue: proj.avenue,
-      date: proj.date,
-      impact: proj.impact,
-      description: proj.description,
-      fullDescription: proj.fullDescription || proj.description,
-      image: proj.image || "/images/projects/project1.jpg",
-      images: (proj.images && proj.images.length > 0) ? proj.images : [proj.image || "/images/projects/project1.jpg"],
-      videoUrl: proj.videoUrl || "",
+      title: proj.title || "",
+      avenue: proj.avenue || "Community Service Avenue",
+      date: proj.date || new Date().toISOString().split("T")[0],
+      impact: proj.impact || "100+ Participants",
+      description: proj.description || "",
+      image: proj.image || (proj.images && proj.images[0]) || "",
+      images: (proj.images && proj.images.length > 0) ? proj.images.slice(0, 3) : (proj.image ? [proj.image] : []),
+      driveLink: proj.driveLink || "",
+      proposalPdf: proj.proposalPdf || "",
+      proposalPdfName: proj.proposalPdfName || "",
+      reportPdf: proj.reportPdf || "",
+      reportPdfName: proj.reportPdfName || "",
+      projectChair: proj.projectChair || "",
+      projectSecretary: proj.projectSecretary || "",
+      projectTreasurer: proj.projectTreasurer || "",
       submittedBy: proj.submittedBy || "",
     });
     setActiveTab("submit");
@@ -169,8 +316,7 @@ export default function SubmitProjectPage() {
                 : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-white"
             }`}
           >
-            <FolderPlus size={14} className="inline mr-1.5" />
-            <span>{editingProject ? "Edit Submission" : "Submit New"}</span>
+            {editingProject ? "Edit Submission" : "Submit New"}
           </button>
 
           <button
@@ -181,18 +327,13 @@ export default function SubmitProjectPage() {
                 : "bg-slate-900 text-slate-400 border border-slate-800 hover:text-white"
             }`}
           >
-            <User size={14} className="inline mr-1.5" />
-            <span>My Submissions</span>
+            My Submissions
           </button>
         </div>
       </div>
 
       {/* Header Title */}
       <div className="text-center max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
-          <span>MULTI-PHOTO ALBUM &amp; VIDEO UPLOADER</span>
-        </div>
         <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
           {activeTab === "submit" 
             ? (editingProject ? "Edit Your Project" : "Submit a Project") 
@@ -200,7 +341,7 @@ export default function SubmitProjectPage() {
         </h1>
         <p className="text-slate-300 text-sm mt-3 font-light leading-relaxed">
           {activeTab === "submit"
-            ? "Upload multiple album photos and videos for your project. Submissions are stored in database & go live upon Admin approval."
+            ? "Upload 1 to 3 showcase photos for the website, provide the Google Drive folder link for all event photos/videos, and fill in the project committee details."
             : "Check status of your submitted projects or update details anytime."}
         </p>
       </div>
@@ -214,7 +355,7 @@ export default function SubmitProjectPage() {
                 <CheckCircle2 size={36} />
               </div>
               <h3 className="text-2xl font-black text-white">
-                {editingProject ? "Project Updated!" : "Project Album & Video Uploaded!"}
+                {editingProject ? "Project Updated!" : "Project Proposal Submitted!"}
               </h3>
               <p className="text-slate-300 text-sm max-w-md mx-auto leading-relaxed">
                 Your submission status is currently <span className="text-yellow-400 font-bold">PENDING APPROVAL</span>. Once an Admin reviews and approves it, it will automatically appear live on the website.
@@ -239,6 +380,13 @@ export default function SubmitProjectPage() {
               onSubmit={handleSubmit}
               className="p-8 sm:p-10 rounded-3xl bg-[#0c1017]/90 border border-slate-800 space-y-6 shadow-2xl backdrop-blur-xl"
             >
+              {formError && (
+                <div className="p-4 rounded-2xl bg-rose-950/70 border border-rose-500/60 flex items-start gap-3 text-rose-300 text-xs shadow-lg">
+                  <AlertCircle size={18} className="text-rose-400 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed font-semibold">{formError}</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Input
                   label="Project Title"
@@ -296,26 +444,54 @@ export default function SubmitProjectPage() {
                 />
               </div>
 
-              {/* MULTI-PHOTO & VIDEO FILE UPLOADER */}
+              {/* PROJECT LEADERSHIP COMMITTEE */}
+              <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                  Project Leadership Committee *
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <Input
+                    label="Project Chairperson"
+                    required
+                    placeholder="e.g. Rtr. Kasun Perera"
+                    value={formData.projectChair}
+                    onChange={(e) => setFormData({ ...formData, projectChair: e.target.value })}
+                  />
+                  <Input
+                    label="Project Secretary"
+                    required
+                    placeholder="e.g. Rtr. Amaya Silva"
+                    value={formData.projectSecretary}
+                    onChange={(e) => setFormData({ ...formData, projectSecretary: e.target.value })}
+                  />
+                  <Input
+                    label="Project Treasurer"
+                    required
+                    placeholder="e.g. Rtr. Dineth Fernando"
+                    value={formData.projectTreasurer}
+                    onChange={(e) => setFormData({ ...formData, projectTreasurer: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* SHOWCASE PHOTOS (MIN 1, MAX 3) */}
               <div className="p-6 rounded-2xl bg-slate-900/80 border-2 border-dashed border-slate-700/80 hover:border-[#e6007e] transition-all space-y-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2 mb-1">
-                      <Upload size={16} className="text-[#e6007e]" />
-                      <span>Multiple Photo Album &amp; Video Upload</span>
+                    <label className="text-xs font-bold uppercase tracking-wider text-white block mb-1">
+                      Showcase Photos (Min 1, Max 3) *
                     </label>
                     <p className="text-[11px] text-slate-400 font-light">
-                      Select multiple photos (album gallery) or video files at once from your device.
+                      Upload 1 to 3 highlight photos for the website card. All other event photos and videos belong in the Google Drive folder link.
                     </p>
                   </div>
 
-                  <label className="px-5 py-2.5 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-all shadow-md shrink-0 inline-flex items-center gap-1.5">
-                    <FileImage size={14} />
-                    <span>Upload Multiple Photos</span>
+                  <label className="px-5 py-2.5 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-all shadow-md shrink-0 inline-flex items-center">
+                    <span>Upload Showcase Photos ({formData.images ? formData.images.length : 0}/3)</span>
                     <input
                       type="file"
                       multiple
-                      accept="image/*,video/*"
+                      accept="image/*"
                       onChange={handleMultipleFileUpload}
                       className="hidden"
                     />
@@ -326,12 +502,12 @@ export default function SubmitProjectPage() {
                 {formData.images && formData.images.length > 0 && (
                   <div className="pt-2 border-t border-slate-800 space-y-2">
                     <span className="text-xs font-bold text-emerald-400 block">
-                      ✓ {formData.images.length} Photo(s) in Album Gallery
+                      ✓ {formData.images.length} of 3 Showcase Photo(s) Selected
                     </span>
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                       {formData.images.map((imgUrl, idx) => (
                         <div key={idx} className="relative h-20 rounded-xl overflow-hidden border border-slate-700 group">
-                          <Image src={imgUrl} alt={`Album ${idx}`} fill className="object-cover" />
+                          <Image src={imgUrl} alt={`Showcase ${idx + 1}`} fill className="object-cover" />
                           <button
                             type="button"
                             onClick={() => removePhotoFromGallery(idx)}
@@ -346,50 +522,162 @@ export default function SubmitProjectPage() {
                 )}
               </div>
 
-              {/* Video Embed Link Input */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5 flex items-center gap-1.5">
-                  <Video size={14} className="text-cyan-400" />
-                  <span>Project Video Link / Embed URL (Optional)</span>
+              {/* GOOGLE DRIVE MEDIA FOLDER (MANDATORY) */}
+              <div className="p-6 rounded-2xl bg-slate-900/60 border border-[#e6007e]/30 space-y-3">
+                <label className="text-xs font-bold uppercase tracking-wider text-white block">
+                  Google Drive Folder Link (All Photos &amp; Videos) *
                 </label>
                 <input
                   type="url"
-                  placeholder="https://www.youtube.com/watch?v=... or Video URL"
-                  value={formData.videoUrl}
-                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                  required
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  value={formData.driveLink}
+                  onChange={(e) => setFormData({ ...formData, driveLink: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
                 />
+                <div className="p-3 rounded-xl bg-[#07090e] border border-amber-500/30 text-[11px] text-amber-300/90 leading-relaxed space-y-1">
+                  <p className="font-bold">Important Access Requirement:</p>
+                  <p>
+                    Please ensure the Google Drive folder sharing permission is set to <strong>&quot;Anyone with the link can view&quot;</strong> (General Access: Anyone with link → Viewer), so that club members and the public can view the full event album and videos.
+                  </p>
+                </div>
+              </div>
+
+              {/* PROJECT DOCUMENTS (PDF) */}
+              <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-4">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                    Project Proposal &amp; Report (PDF)
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-light mt-1">
+                    Upload official Project Proposal and Project Report in PDF format for club administration records.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  {/* 1. Project Proposal PDF */}
+                  <div className="p-4 rounded-xl bg-[#0c1017] border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        1. Project Proposal (PDF)
+                      </label>
+                      {formData.proposalPdf && (
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-500/30">
+                          Attached
+                        </span>
+                      )}
+                    </div>
+
+                    {formData.proposalPdf ? (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/80 border border-slate-700">
+                        <span className="text-xs font-semibold text-white truncate">
+                          {formData.proposalPdfName || "Project_Proposal.pdf"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={removeProposalPdf}
+                          className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors ml-2 shrink-0 cursor-pointer text-xs font-bold"
+                          title="Remove file"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-[#e6007e] rounded-xl cursor-pointer transition-colors group bg-slate-900/40">
+                        {isUploadingProposal ? (
+                          <div className="flex items-center gap-2 text-xs text-[#e6007e]">
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Uploading Proposal...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
+                              Upload Proposal PDF
+                            </span>
+                            <span className="text-[10px] text-slate-500 mt-0.5">Click to browse (.pdf, max 25MB)</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="application/pdf,.pdf"
+                          disabled={isUploadingProposal}
+                          onChange={(e) => handlePdfUpload(e, "proposal")}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* 2. Project Report PDF */}
+                  <div className="p-4 rounded-xl bg-[#0c1017] border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        2. Project Report (PDF)
+                      </label>
+                      {formData.reportPdf && (
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-500/30">
+                          Attached
+                        </span>
+                      )}
+                    </div>
+
+                    {formData.reportPdf ? (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/80 border border-slate-700">
+                        <span className="text-xs font-semibold text-white truncate">
+                          {formData.reportPdfName || "Project_Report.pdf"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={removeReportPdf}
+                          className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors ml-2 shrink-0 cursor-pointer text-xs font-bold"
+                          title="Remove file"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-[#e6007e] rounded-xl cursor-pointer transition-colors group bg-slate-900/40">
+                        {isUploadingReport ? (
+                          <div className="flex items-center gap-2 text-xs text-[#e6007e]">
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Uploading Report...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
+                              Upload Report PDF
+                            </span>
+                            <span className="text-[10px] text-slate-500 mt-0.5">Click to browse (.pdf, max 25MB)</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="application/pdf,.pdf"
+                          disabled={isUploadingReport}
+                          onChange={(e) => handlePdfUpload(e, "report")}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
-                  Short Description
+                  Project Description *
                 </label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   required
-                  placeholder="Brief 1-2 sentence summary of project objectives..."
+                  placeholder="Summary of project objectives, activities, and community impact..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
-                  Full Detailed Overview
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder="Detailed description of execution, outcomes, and milestones..."
-                  value={formData.fullDescription}
-                  onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
-                />
-              </div>
-
               <Button type="submit" className="w-full py-4 text-xs font-bold uppercase tracking-widest">
-                <Send size={15} />
                 <span>{editingProject ? "Save Changes" : "Submit Project & Upload Album to Database"}</span>
               </Button>
             </form>

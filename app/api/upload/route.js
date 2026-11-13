@@ -131,3 +131,48 @@ export async function POST(req) {
     );
   }
 }
+
+// DELETE: Remove image from Cloudinary and MongoDB (Admin Only)
+export async function DELETE(req) {
+  const auth = requireAdmin(req, ["super_admin", "project_editor"]);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "Missing media ID." }, { status: 400 });
+    }
+
+    await dbConnect();
+    const media = await Media.findById(id);
+    if (!media) {
+      return NextResponse.json({ success: false, error: "Media item not found." }, { status: 404 });
+    }
+
+    // Delete from Cloudinary if publicId exists
+    if (media.publicId && process.env.CLOUDINARY_API_KEY) {
+      try {
+        await cloudinary.uploader.destroy(media.publicId);
+      } catch (cloudErr) {
+        console.warn("Cloudinary asset deletion note:", cloudErr.message);
+      }
+    }
+
+    await Media.findByIdAndDelete(id);
+
+    return NextResponse.json({
+      success: true,
+      message: "Media deleted from Cloudinary and database.",
+    });
+  } catch (error) {
+    console.error("DELETE /api/upload error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to delete media." },
+      { status: 500 }
+    );
+  }
+}

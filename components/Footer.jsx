@@ -59,6 +59,17 @@ export default function Footer() {
     };
 
     window.addEventListener("rotaract_site_content_updated", handleUpdate);
+
+    // Fetch dynamic content from MongoDB settings API
+    fetch("/api/settings", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSite((prev) => ({ ...prev, ...json.data }));
+        }
+      })
+      .catch((err) => console.log("Footer settings API fallback:", err));
+
     return () => window.removeEventListener("rotaract_site_content_updated", handleUpdate);
   }, []);
 
@@ -75,7 +86,6 @@ export default function Footer() {
     { name: "PROJECTS", href: "/projects" },
     { name: "MEDIA", href: "/media" },
     { name: "JOIN US", href: "/join-us" },
-    { name: "ADMIN PANEL", href: "/admin" },
   ];
 
   const socialItems = [
@@ -102,7 +112,7 @@ export default function Footer() {
                   alt="Rotaract Club of Sri Lanka Technology Campus"
                   width={240}
                   height={86}
-                  className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_0_16px_rgba(230,0,126,0.35)]"
+                  className="h-12 sm:h-14 w-auto object-contain"
                 />
                 <p className="text-[11px] text-slate-400 tracking-widest uppercase mt-2">District 3220 • Sri Lanka &amp; Maldives</p>
               </div>

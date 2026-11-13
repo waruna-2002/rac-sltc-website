@@ -13,6 +13,11 @@ export function AdminProvider({ children }) {
   const [adminRole, setAdminRole] = useState(null); // null | "super_admin" | "project_editor"
   const [isVerifying, setIsVerifying] = useState(true);
   const [editModalConfig, setEditModalConfig] = useState(null);
+  const [editMode, setEditMode] = useState(false); // Controls visibility of floating in-context edit buttons (Default OFF for clean view)
+  const [isToolbarMinimized, setIsToolbarMinimized] = useState(false);
+
+  const toggleEditMode = () => setEditMode((prev) => !prev);
+  const toggleToolbarMinimize = () => setIsToolbarMinimized((prev) => !prev);
 
   // Check server-side cryptographic session on initial load
   const verifySession = useCallback(async () => {
@@ -149,6 +154,12 @@ export function AdminProvider({ children }) {
         editModalConfig,
         openEditModal,
         closeEditModal,
+        editMode,
+        setEditMode,
+        toggleEditMode,
+        isToolbarMinimized,
+        setIsToolbarMinimized,
+        toggleToolbarMinimize,
       }}
     >
       {children}

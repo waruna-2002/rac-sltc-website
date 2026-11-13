@@ -8,36 +8,32 @@ import {
   Menu, 
   X, 
   ArrowUpRight, 
-  ShieldCheck, 
   PlusCircle, 
-  Clock, 
-  Users, 
-  LogOut, 
-  Lock,
   ChevronDown,
   BookOpen,
   Newspaper,
   FileText,
-  Globe
+  Globe,
+  FolderKanban,
+  Calendar,
+  CalendarPlus
 } from "lucide-react";
-import { useAdmin } from "@/context/AdminContext";
-import { getStoredProjects } from "@/lib/projectsStore";
-import Image from "next/image";
 import BrandLogo from "@/components/BrandLogo";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const [pendingCount, setPendingCount] = useState(0);
-
   const pathname = usePathname();
-  const { isAdmin, loginAdmin, logoutAdmin } = useAdmin();
   const [mediaDropdownOpen, setMediaDropdownOpen] = useState(false);
+  const [projectsDropdownOpen, setProjectsDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (pathname.startsWith("/media")) {
       setMediaDropdownOpen(true);
+    }
+    if (pathname.startsWith("/projects") || pathname.startsWith("/events")) {
+      setProjectsDropdownOpen(true);
     }
   }, [pathname]);
 
@@ -47,42 +43,19 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const projects = getStoredProjects();
-    setPendingCount(projects.filter((p) => p.status === "pending").length);
-  }, [isOpen, isAdmin]);
-
   const navLinks = [
     { name: "HOME", href: "/" },
     { name: "ABOUT US", href: "/about-us" },
     { name: "OUR PEOPLE", href: "/our-people" },
     { name: "PROJECTS", href: "/projects" },
-    { name: "SUBMIT PROJECT", href: "/projects/submit" },
     { name: "MEDIA", href: "/media" },
-  ];
-
-  // Admin-only Navigation Links
-  const adminOnlyLinks = [
-    { 
-      name: `Pending Approvals (${pendingCount})`, 
-      href: "/admin?tab=approvals", 
-      icon: Clock,
-      badge: pendingCount > 0 ? pendingCount : null 
-    },
-    { 
-      name: "All Member Detail", 
-      href: "/our-people", 
-      icon: Users 
-    },
   ];
 
   return (
     <>
-      {/* Clean Full-Width Top Header - Dynamically pushed down when Admin Toolbar is active */}
+      {/* Clean Full-Width Top Header */}
       <header
-        className={`fixed left-0 right-0 z-40 transition-all duration-300 ${
-          isAdmin ? "top-9 sm:top-8" : "top-0"
-        } ${
+        className={`fixed left-0 right-0 z-40 transition-all duration-300 top-0 ${
           scrolled
             ? "bg-[#07090e]/95 backdrop-blur-md border-b border-slate-800/80 shadow-lg shadow-black/40 py-3"
             : "bg-transparent py-4 sm:py-5"
@@ -102,26 +75,6 @@ export default function Navbar() {
               <span>JOIN US</span>
               <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </Link>
-
-            {/* Admin Logout / Login Button Right Next to Join Us */}
-            {isAdmin ? (
-              <button
-                onClick={logoutAdmin}
-                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-200 hover:text-rose-400 transition-all inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-md"
-              >
-                <LogOut size={13} />
-                <span className="hidden xs:inline">LOGOUT</span>
-              </button>
-            ) : (
-              <Link
-                href="/admin"
-                title="Admin Sign In"
-                className="hidden xs:inline-flex px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-slate-900/80 border border-slate-700/80 hover:border-[#e6007e] text-slate-300 hover:text-white transition-all items-center gap-1.5 cursor-pointer whitespace-nowrap"
-              >
-                <Lock size={12} />
-                <span>ADMIN</span>
-              </Link>
-            )}
 
             {/* Menu Drawer Toggle */}
             <button
@@ -154,29 +107,126 @@ export default function Navbar() {
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-[#0c1017] border-l border-slate-800/80 z-50 flex flex-col p-6 shadow-2xl overflow-y-auto"
             >
-              <div className="flex items-center justify-between pb-6 border-b border-slate-800/80">
-                <div className="flex items-center">
-                  <Image
-                    src="/images/rotaract-sltc-clean-logo.png"
-                    alt="Rotaract Club of Sri Lanka Technology Campus"
-                    width={200}
-                    height={71}
-                    className="h-10 sm:h-11 w-auto object-contain drop-shadow-[0_0_14px_rgba(230,0,126,0.4)]"
-                  />
-                </div>
+              <div className="flex items-center justify-between pb-5 border-b border-slate-800/80">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                  Navigation
+                </span>
 
                 <button
                   onClick={() => setIsOpen(false)}
                   aria-label="Close sidebar"
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-600 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
               {/* Standard Links */}
               <nav className="flex flex-col gap-2 py-6">
                 {navLinks.map((link) => {
+                  if (link.name === "PROJECTS") {
+                    const isProjectsActive = pathname.startsWith("/projects") || pathname.startsWith("/events");
+                    return (
+                      <div key={link.name} className="flex flex-col">
+                        <button
+                          type="button"
+                          onClick={() => setProjectsDropdownOpen(!projectsDropdownOpen)}
+                          className={`w-full px-4 py-3 rounded-xl text-xs font-bold tracking-wider transition-all flex items-center justify-between group cursor-pointer ${
+                            isProjectsActive
+                              ? "bg-[#e6007e]/15 text-[#e6007e] border border-[#e6007e]/40 shadow-sm"
+                              : "text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span>PROJECTS</span>
+                          </span>
+                          <ChevronDown
+                            size={15}
+                            className={`transition-transform duration-200 ${
+                              projectsDropdownOpen ? "rotate-180 text-[#e6007e]" : "text-slate-400 group-hover:text-white"
+                            }`}
+                          />
+                        </button>
+
+                        <AnimatePresence>
+                          {projectsDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="pl-3 pr-1 py-1 space-y-1 overflow-hidden"
+                            >
+                              {/* 1. All Projects (දැනට තියන Projects) */}
+                              <Link
+                                href="/projects"
+                                onClick={() => setIsOpen(false)}
+                                className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between group/sub transition-colors ${
+                                  pathname === "/projects"
+                                    ? "bg-slate-900 text-white"
+                                    : "text-slate-300 hover:text-white hover:bg-slate-900"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <FolderKanban size={14} className="text-[#e6007e]" />
+                                  <span>All Projects</span>
+                                </div>
+                                <span className="text-[10px] text-slate-500 group-hover/sub:text-slate-400">Current</span>
+                              </Link>
+
+                              {/* 2. Upcoming Events (දැනට තියන Upcoming) */}
+                              <Link
+                                href="/#upcoming-events"
+                                onClick={() => setIsOpen(false)}
+                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center justify-between group/sub transition-colors"
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <Calendar size={14} className="text-[#e6007e]" />
+                                  <span>Upcoming Events</span>
+                                </div>
+                                <span className="text-[10px] text-slate-500 group-hover/sub:text-slate-400">Upcoming</span>
+                              </Link>
+
+                              {/* 3. Submit Project Proposal (Project Submit කරන එක) */}
+                              <Link
+                                href="/projects/submit"
+                                onClick={() => setIsOpen(false)}
+                                className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between group/sub transition-colors ${
+                                  pathname === "/projects/submit"
+                                    ? "bg-slate-900 text-white"
+                                    : "text-slate-300 hover:text-white hover:bg-slate-900"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <PlusCircle size={14} className="text-[#e6007e]" />
+                                  <span>Submit Project</span>
+                                </div>
+                                <span className="text-[10px] text-[#e6007e]/90 bg-[#e6007e]/10 px-1.5 py-0.5 rounded font-semibold">Proposal</span>
+                              </Link>
+
+                              {/* 4. Propose Upcoming Event (Upcoming Submit කරන එක) */}
+                              <Link
+                                href="/events/submit"
+                                onClick={() => setIsOpen(false)}
+                                className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between group/sub transition-colors ${
+                                  pathname === "/events/submit"
+                                    ? "bg-slate-900 text-white"
+                                    : "text-slate-300 hover:text-white hover:bg-slate-900"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <CalendarPlus size={14} className="text-cyan-400" />
+                                  <span>Propose Upcoming Event</span>
+                                </div>
+                                <span className="text-[10px] text-cyan-400/90 bg-cyan-400/10 px-1.5 py-0.5 rounded font-semibold">Propose</span>
+                              </Link>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
                   if (link.name === "MEDIA") {
                     const isMediaActive = pathname.startsWith("/media");
                     return (
@@ -193,19 +243,12 @@ export default function Navbar() {
                           <span className="flex items-center gap-2">
                             <span>MEDIA</span>
                           </span>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`w-2 h-2 rounded-full transition-colors ${
-                                isMediaActive ? "bg-[#e6007e]" : "bg-slate-700 group-hover:bg-[#e6007e]"
-                              }`}
-                            />
-                            <ChevronDown
-                              size={15}
-                              className={`transition-transform duration-200 ${
-                                mediaDropdownOpen ? "rotate-180 text-[#e6007e]" : "text-slate-400 group-hover:text-white"
-                              }`}
-                            />
-                          </div>
+                          <ChevronDown
+                            size={15}
+                            className={`transition-transform duration-200 ${
+                              mediaDropdownOpen ? "rotate-180 text-[#e6007e]" : "text-slate-400 group-hover:text-white"
+                            }`}
+                          />
                         </button>
 
                         <AnimatePresence>
@@ -271,61 +314,10 @@ export default function Navbar() {
                           : "text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent"
                       }`}
                     >
-                      <span className="flex items-center gap-2">
-                        {link.href === "/projects/submit" && <PlusCircle size={14} />}
-                        <span>{link.name}</span>
-                      </span>
-                      <span
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          isActive ? "bg-[#e6007e]" : "bg-slate-700 group-hover:bg-[#e6007e]"
-                        }`}
-                      />
+                      <span>{link.name}</span>
                     </Link>
                   );
                 })}
-
-                {/* ADMIN-ONLY NAVIGATION SECTION (VISIBLE ONLY WHEN LOGGED IN AS ADMIN) */}
-                {isAdmin && (
-                  <div className="pt-4 mt-2 border-t border-slate-800/80 space-y-2">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#e6007e] block px-4 mb-2">
-                      ✦ ADMIN CONTROLS ✦
-                    </span>
-
-                    {adminOnlyLinks.map((alink) => {
-                      const Icon = alink.icon;
-                      return (
-                        <Link
-                          key={alink.name}
-                          href={alink.href}
-                          onClick={() => setIsOpen(false)}
-                          className="px-4 py-3 rounded-xl text-xs font-bold tracking-wider text-yellow-400 bg-yellow-950/40 border border-yellow-500/40 hover:bg-yellow-500/20 transition-all flex items-center justify-between"
-                        >
-                          <span className="flex items-center gap-2">
-                            <Icon size={14} />
-                            <span>{alink.name}</span>
-                          </span>
-                          {alink.badge && (
-                            <span className="w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] font-black flex items-center justify-center">
-                              {alink.badge}
-                            </span>
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-                {!isAdmin && (
-                  <div className="pt-4 mt-2 border-t border-slate-800/80">
-                    <Link
-                      href="/admin"
-                      onClick={() => setIsOpen(false)}
-                      className="w-full px-4 py-2.5 rounded-xl text-xs font-bold tracking-wider text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-[#e6007e] flex items-center justify-center gap-2 transition-all cursor-pointer"
-                    >
-                      <Lock size={13} className="text-[#e6007e]" />
-                      <span>Admin Portal Login</span>
-                    </Link>
-                  </div>
-                )}
               </nav>
 
               <div className="mt-auto pt-6 border-t border-slate-800/80 text-xs text-slate-500 space-y-2">

@@ -59,7 +59,6 @@ export async function POST(request) {
       email,
       tempToken: otpData.tempToken,
       message: `A 6-digit password reset code was dispatched to ${email}.`,
-      ...(process.env.NODE_ENV !== "production" ? { devOtp: otpData.code } : {}),
     });
   } catch (error) {
     console.error("POST /api/auth/forgot-password error:", error);

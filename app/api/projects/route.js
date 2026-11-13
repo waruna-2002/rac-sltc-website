@@ -21,31 +21,14 @@ export async function GET(request) {
     const avenue = searchParams.get("avenue");
     const search = searchParams.get("search");
 
-    // Auto-seed if database collection is empty
-    const count = await Project.countDocuments();
-    if (count === 0 && initialProjects && initialProjects.length > 0) {
-      await Project.insertMany(
-        initialProjects.map((p) => ({
-          title: p.title,
-          slug: p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-          avenue: p.avenue || "Community Service Avenue",
-          date: p.date || new Date().toISOString().split("T")[0],
-          impact: p.impact || "Community Impact",
-          description: p.description,
-          fullDescription: p.fullDescription || p.description,
-          submittedBy: "SLTC Rotaract Executive Board",
-          image: p.image || "/images/projects/project1.jpg",
-          images: p.images || [p.image || "/images/projects/project1.jpg"],
-          status: "approved",
-          organizers: p.organizers || "Rotaract SLTC Member",
-          highlights: p.highlights || ["Community Engagement Initiative"],
-        }))
-      );
-    }
-
     const query = {};
-    if (status && status !== "all") {
+    if (status === "all") {
+      // Admin requested all projects
+    } else if (status) {
       query.status = status;
+    } else {
+      // Public site defaults to only approved projects
+      query.status = "approved";
     }
     if (avenue && avenue !== "All") {
       query.avenue = avenue;
@@ -60,22 +43,43 @@ export async function GET(request) {
 
     const projects = await Project.find(query).sort({ createdAt: -1 });
 
+    const session = getSession(request);
+    const isAdmin = session.authenticated;
+
+    const sanitized = projects.map((p) => {
+      const obj = p.toObject ? p.toObject() : { ...p };
+      if (!isAdmin) {
+        delete obj.proposalPdf;
+        delete obj.proposalPdfName;
+        delete obj.reportPdf;
+        delete obj.reportPdfName;
+      }
+      return obj;
+    });
+
     return NextResponse.json({
       success: true,
-      count: projects.length,
-      data: projects,
+      count: sanitized.length,
+      data: sanitized,
     });
   } catch (error) {
     console.error("GET /api/projects error:", error);
     // If DB is offline, filter initial static projects gracefully
     let filtered = memoryStore.projects || [];
+    const session = getSession(request);
+    const isAdmin = session.authenticated;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const avenue = searchParams.get("avenue");
     const search = searchParams.get("search");
 
-    if (status && status !== "all") {
+    if (status === "all") {
+      // return all
+    } else if (status) {
       filtered = filtered.filter((p) => p.status === status);
+    } else {
+      // Public site defaults to only approved projects
+      filtered = filtered.filter((p) => (p.status || "approved") === "approved");
     }
     if (avenue && avenue !== "All") {
       filtered = filtered.filter((p) => p.avenue === avenue);
@@ -87,10 +91,21 @@ export async function GET(request) {
       );
     }
 
+    const sanitizedFallback = filtered.map((p) => {
+      const obj = { ...p };
+      if (!isAdmin) {
+        delete obj.proposalPdf;
+        delete obj.proposalPdfName;
+        delete obj.reportPdf;
+        delete obj.reportPdfName;
+      }
+      return obj;
+    });
+
     return NextResponse.json({
       success: true,
-      count: filtered.length,
-      data: filtered,
+      count: sanitizedFallback.length,
+      data: sanitizedFallback,
       fallback: true,
     });
   }
@@ -127,6 +142,14 @@ export async function POST(request) {
     fullDescription,
     image,
     images,
+    driveLink,
+    proposalPdf,
+    proposalPdfName,
+    reportPdf,
+    reportPdfName,
+    projectChair,
+    projectSecretary,
+    projectTreasurer,
     videoUrl,
     submittedBy,
     organizers,
@@ -141,18 +164,25 @@ export async function POST(request) {
     );
   }
 
+  if (!driveLink || !driveLink.trim()) {
+    return NextResponse.json(
+      { success: false, error: "Google Drive link (Photos & Videos folder) is required." },
+      { status: 400 }
+    );
+  }
+
   const cleanSlug =
     title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "") + `-${Date.now().toString().slice(-4)}`;
 
-  const rawPrimaryImage = image || (images && images[0]) || "/images/projects/project1.jpg";
-  const primaryImage = sanitizeUrl(rawPrimaryImage);
+  const rawPrimaryImage = image || (images && images[0]) || "";
+  const primaryImage = rawPrimaryImage ? sanitizeUrl(rawPrimaryImage) : "";
   const galleryImages =
     images && images.length > 0
-      ? images.map((img) => sanitizeUrl(String(img)))
-      : [primaryImage];
+      ? images.slice(0, 3).map((img) => sanitizeUrl(String(img)))
+      : (primaryImage ? [primaryImage] : []);
 
   const verifiedStatus = isAdmin ? (status || "approved") : "pending";
 
@@ -167,11 +197,19 @@ export async function POST(request) {
       description: sanitizeInput(description.trim()),
       fullDescription: sanitizeInput(fullDescription || description),
       submittedBy: sanitizeInput(submittedBy || (isAdmin ? session.role : "Anonymous Rotaractor")),
-      image: primaryImage,
+      image: primaryImage || (galleryImages[0] || ""),
       images: galleryImages,
+      driveLink: sanitizeUrl(driveLink.trim()),
+      proposalPdf: proposalPdf ? sanitizeUrl(proposalPdf) : "",
+      proposalPdfName: sanitizeInput(proposalPdfName || ""),
+      reportPdf: reportPdf ? sanitizeUrl(reportPdf) : "",
+      reportPdfName: sanitizeInput(reportPdfName || ""),
+      projectChair: sanitizeInput(projectChair || ""),
+      projectSecretary: sanitizeInput(projectSecretary || ""),
+      projectTreasurer: sanitizeInput(projectTreasurer || ""),
       videoUrl: videoUrl ? sanitizeUrl(videoUrl) : "",
       status: verifiedStatus,
-      organizers: sanitizeInput(organizers || "Rotaract SLTC Member"),
+      organizers: sanitizeInput(organizers || (projectChair ? `Chair: ${projectChair}` : "Rotaract SLTC Member")),
       highlights:
         highlights && highlights.length > 0
           ? highlights.map((h) => sanitizeInput(String(h)))

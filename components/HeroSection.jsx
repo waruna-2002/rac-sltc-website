@@ -3,12 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Edit3 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
-import { useAdmin } from "@/context/AdminContext";
 
 export default function HeroSection() {
-  const { isSuperAdmin, openEditModal } = useAdmin();
   const [site, setSite] = useState({
     heroTitle: "ROTARACT CLUB OF SLTC",
     heroSubtitle: "Ignite Potential • Inspire Impact • Serve with Passion",
@@ -26,6 +24,17 @@ export default function HeroSection() {
     };
 
     window.addEventListener("rotaract_site_content_updated", handleUpdate);
+
+    // Fetch dynamic content from MongoDB settings API
+    fetch("/api/settings", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSite((prev) => ({ ...prev, ...json.data }));
+        }
+      })
+      .catch((err) => console.log("Hero settings API fallback:", err));
+
     return () => window.removeEventListener("rotaract_site_content_updated", handleUpdate);
   }, []);
 
@@ -72,17 +81,6 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-[94vh] flex items-center justify-center text-center px-4 sm:px-6 lg:px-8 pt-32 pb-24 overflow-hidden bg-[radial-gradient(ellipse_100%_80%_at_50%_-10%,rgba(53,11,36,0.55)_0%,rgba(27,5,19,0.35)_40%,transparent_80%)] group">
-      {/* ADMIN IN-CONTEXT EDIT BADGE */}
-      {isSuperAdmin && (
-        <button
-          onClick={() => openEditModal("hero")}
-          className="absolute top-24 right-6 z-30 px-3.5 py-1.5 rounded-full bg-[#e6007e] text-white text-xs font-bold uppercase tracking-wider shadow-xl hover:scale-105 transition-all flex items-center gap-1.5 border border-pink-300/40 cursor-pointer"
-        >
-          <Edit3 size={14} />
-          <span>Edit Hero Section</span>
-        </button>
-      )}
-
       {/* Ambient Breathing Deep-Maroon/Burgundy Glow Layer 1 */}
       <motion.div
         animate={{
@@ -112,17 +110,31 @@ export default function HeroSection() {
         className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] sm:w-[700px] h-[350px] sm:h-[500px] bg-[radial-gradient(circle_at_center,_rgba(255,102,171,0.22)_0%,_rgba(95,10,50,0.3)_48%,_transparent_75%)] blur-[95px] rounded-full pointer-events-none -z-0"
       />
 
+      {/* Optional Custom Hero Background Photo */}
+      {site.heroBackgroundImage && (
+        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <Image
+            src={site.heroBackgroundImage}
+            alt="Hero Banner Background"
+            fill
+            unoptimized
+            className="object-cover opacity-25 filter brightness-50"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#07090e]/80 via-transparent to-[#07090e]" />
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto relative z-10 flex flex-col items-center">
-        {/* District Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+        {/* District Eyebrow */}
+        <motion.p
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-[11px] sm:text-xs font-semibold tracking-[0.18em] text-slate-300 uppercase mb-8 backdrop-blur-md shadow-sm"
+          className="text-xs sm:text-sm font-semibold tracking-[0.24em] text-[#ff4d94] uppercase mb-6"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
-          <span>{site.districtBadge}</span>
-        </motion.div>
+          {site.districtBadge}
+        </motion.p>
 
         {/* Main Headline with Sleek Tall Condensed Serif/Display Font & Drop-Down Entrance Animation */}
         <motion.h1

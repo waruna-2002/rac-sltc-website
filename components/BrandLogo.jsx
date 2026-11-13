@@ -22,7 +22,7 @@ export default function BrandLogo() {
           width={286}
           height={103}
           priority
-          className="h-9 xs:h-10 sm:h-12 md:h-13 lg:h-15 w-auto max-w-[155px] xs:max-w-[195px] sm:max-w-[280px] md:max-w-[340px] object-contain drop-shadow-[0_0_18px_rgba(230,0,126,0.45)] transition-all"
+          className="h-9 xs:h-10 sm:h-12 md:h-13 lg:h-15 w-auto max-w-[155px] xs:max-w-[195px] sm:max-w-[280px] md:max-w-[340px] object-contain transition-all"
         />
       </motion.div>
     </Link>

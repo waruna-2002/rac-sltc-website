@@ -24,10 +24,9 @@ export default function OurPeoplePage() {
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-14 bg-[#07090e]">
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
-          <span>LEADERSHIP & DIRECTORS</span>
-        </div>
+        <p className="text-xs font-bold tracking-[0.2em] text-[#e6007e] uppercase mb-3">
+          Leadership &amp; Directors
+        </p>
         
         <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
           Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">People</span>

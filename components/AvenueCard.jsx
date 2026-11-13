@@ -12,10 +12,8 @@ import {
   Megaphone, 
   DollarSign,
   UserPlus,
-  Leaf,
-  Edit3
+  Leaf
 } from "lucide-react";
-import { useAdmin } from "@/context/AdminContext";
 
 const iconMap = {
   Users,
@@ -30,8 +28,7 @@ const iconMap = {
   Leaf,
 };
 
-export default function AvenueCard({ id, title, tagline, subtitle, description, icon, onEdit }) {
-  const { isAdmin, isSuperAdmin } = useAdmin();
+export default function AvenueCard({ id, title, tagline, subtitle, description, icon }) {
   const IconComponent = iconMap[icon] || Users;
   const displayTagline = tagline || subtitle || "Avenue of Service";
 
@@ -41,18 +38,7 @@ export default function AvenueCard({ id, title, tagline, subtitle, description, 
       transition={{ duration: 0.3 }}
       className="p-7 rounded-2xl bg-[#0c1017]/80 border border-slate-800/90 hover:border-[#e6007e]/60 transition-all duration-300 flex flex-col justify-between group shadow-xl hover:shadow-[0_0_30px_rgba(230,0,126,0.2)] backdrop-blur-xl relative overflow-hidden"
     >
-      {/* ADMIN IN-CONTEXT EDIT BADGE ON AVENUE CARD */}
-      {isSuperAdmin && (
-        <button
-          onClick={onEdit}
-          className="absolute top-3 right-3 z-30 px-2.5 py-1 rounded-full bg-[#e6007e] text-white text-[10px] font-bold uppercase tracking-wider shadow-md hover:scale-105 transition-all flex items-center gap-1 border border-pink-300/40 cursor-pointer"
-        >
-          <Edit3 size={11} />
-          <span>Edit Avenue</span>
-        </button>
-      )}
-
-      {/* Top Corner Neon Accent Line */}
+      {/* Top Corner Accent Line */}
       <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#e6007e]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-bl-full" />
 
       <div>
@@ -72,7 +58,6 @@ export default function AvenueCard({ id, title, tagline, subtitle, description, 
 
       <div className="mt-6 pt-4 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 font-semibold uppercase tracking-wider group-hover:text-slate-300 transition-colors">
         <span>Avenue of Service</span>
-        <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e] group-hover:animate-ping" />
       </div>
     </motion.div>
   );

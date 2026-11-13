@@ -19,7 +19,7 @@ const AdminUserSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      default: "waruna.jajjja@gmail.com",
+      default: "rotaractsltc@gmail.com",
     },
     role: {
       type: String,

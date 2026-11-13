@@ -59,11 +59,43 @@ const ProjectSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      default: "/images/projects/project1.jpg",
+      default: "",
     },
     images: {
       type: [String],
       default: [],
+    },
+    driveLink: {
+      type: String,
+      default: "",
+    },
+    proposalPdf: {
+      type: String,
+      default: "",
+    },
+    proposalPdfName: {
+      type: String,
+      default: "",
+    },
+    reportPdf: {
+      type: String,
+      default: "",
+    },
+    reportPdfName: {
+      type: String,
+      default: "",
+    },
+    projectChair: {
+      type: String,
+      default: "",
+    },
+    projectSecretary: {
+      type: String,
+      default: "",
+    },
+    projectTreasurer: {
+      type: String,
+      default: "",
     },
     videoUrl: {
       type: String,
@@ -92,5 +124,10 @@ ProjectSchema.virtual("id").get(function () {
 });
 ProjectSchema.set("toJSON", { virtuals: true });
 ProjectSchema.set("toObject", { virtuals: true });
+
+// Ensure model updates on hot-reload during development
+if (mongoose.models && mongoose.models.Project) {
+  delete mongoose.models.Project;
+}
 
 export default mongoose.models.Project || mongoose.model("Project", ProjectSchema);

@@ -21,7 +21,7 @@ export default function ProjectsPage() {
     fetch("/api/projects?status=approved")
       .then((res) => res.json())
       .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.success && Array.isArray(json.data)) {
           setAllProjects(json.data);
         }
       })
@@ -44,13 +44,19 @@ export default function ProjectsPage() {
   const approvedProjects = allProjects.filter((p) => (p.status || "approved") === "approved");
 
   const filteredProjects = approvedProjects.filter((p) => {
-    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) || 
-                          p.description.toLowerCase().includes(search.toLowerCase());
+    const s = (search || "").toLowerCase();
+    const matchesSearch =
+      !s ||
+      (p.title || "").toLowerCase().includes(s) ||
+      (p.description || "").toLowerCase().includes(s) ||
+      (p.avenue || "").toLowerCase().includes(s);
+    const pAve = (p.avenue || "").toLowerCase();
+    const targetAve = (selectedAvenue || "").toLowerCase();
     const matchesAvenue =
       selectedAvenue === "All" ||
       p.avenue === selectedAvenue ||
-      (p.avenue && selectedAvenue.toLowerCase().includes(p.avenue.toLowerCase())) ||
-      (p.avenue && p.avenue.toLowerCase().includes(selectedAvenue.toLowerCase().replace(" avenue", "")));
+      (pAve && targetAve.includes(pAve)) ||
+      (pAve && pAve.includes(targetAve.replace(" avenue", "")));
     return matchesSearch && matchesAvenue;
   });
 
@@ -58,10 +64,9 @@ export default function ProjectsPage() {
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 bg-[#07090e]">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="text-center md:text-left max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
-            <span>PORTFOLIO OF IMPACT</span>
-          </div>
+          <p className="text-xs font-bold tracking-[0.2em] text-[#e6007e] uppercase mb-3">
+            Portfolio of Impact
+          </p>
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
             Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Projects</span>
           </h1>
@@ -116,7 +121,7 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredProjects.map((project) => (
             <ProjectCard
-              key={project.id}
+              key={project._id || project.id || project.slug}
               {...project}
               onClick={() => setSelectedProject(project)}
             />

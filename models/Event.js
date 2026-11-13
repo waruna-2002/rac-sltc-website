@@ -71,6 +71,19 @@ const EventSchema = new mongoose.Schema(
       enum: ["upcoming", "ongoing", "completed"],
       default: "upcoming",
     },
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
+    },
+    submittedBy: {
+      type: String,
+      default: "Rotaract Executive Board",
+    },
+    submitterEmail: {
+      type: String,
+      default: "",
+    },
     tags: {
       type: [String],
       default: ["Rotaract", "SLTC", "Youth Leadership"],

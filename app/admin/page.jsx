@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   getStoredMedia, 
@@ -31,12 +32,17 @@ import {
   saveStoredSiteContent 
 } from "@/lib/siteStore";
 import { 
+  getStoredAvenues, 
+  saveStoredAvenues 
+} from "@/lib/avenuesStore";
+import { 
   checkRateLimit, 
   registerFailedAttempt, 
   resetRateLimit 
 } from "@/lib/security";
 import { useAdmin } from "@/context/AdminContext";
 import AdminLoginPortal from "@/components/admin/AdminLoginPortal";
+import VisualSiteCustomizer from "@/components/admin/VisualSiteCustomizer";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -73,11 +79,24 @@ import {
   MapPin,
   FileText,
   BookOpen,
-  Newspaper
+  Newspaper,
+  Sparkles
 } from "lucide-react";
 
-export default function AdminDashboardPage() {
-  const { isAdmin, isSuperAdmin, isProjectEditor, adminRole, loginAdmin, logoutAdmin } = useAdmin();
+function AdminDashboardInner() {
+  const { isAdmin, isSuperAdmin, isProjectEditor, isVerifying, adminRole, loginAdmin, logoutAdmin } = useAdmin();
+  const searchParams = useSearchParams();
+  const tabQuery = searchParams ? searchParams.get("tab") : null;
+  const [activeTab, setActiveTab] = useState(tabQuery || "overview");
+
+  useEffect(() => {
+    if (tabQuery) {
+      setActiveTab(tabQuery);
+    }
+    if (searchParams?.get("logout") === "true") {
+      logoutAdmin();
+    }
+  }, [tabQuery, searchParams, logoutAdmin]);
 
   // Toast Notification System (Replaces browser alert popups)
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
@@ -100,12 +119,31 @@ export default function AdminDashboardPage() {
     if (!id) return;
 
     if (type === "project") {
-      setProjects(deleteProject(id));
-      showToast("Project deleted successfully.", "info");
-      await fetch(`/api/projects/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      }).catch((err) => console.log("Deletion sync error:", err));
+      deleteProject(id);
+      setProjects((prev) =>
+        prev.filter((p) => {
+          const pId = String(p._id || p.id || "").toLowerCase();
+          const target = String(id || "").toLowerCase();
+          const pSlug = String(p.slug || "").toLowerCase();
+          const pTitle = String(p.title || "").toLowerCase();
+          return pId !== target && pSlug !== target && pTitle !== target;
+        })
+      );
+      try {
+        const res = await fetch(`/api/projects/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast("Project permanently deleted from database.", "info");
+        } else {
+          showToast(json.error || "Failed to delete project from database", "error");
+        }
+      } catch (err) {
+        console.error("Deletion sync error:", err);
+        showToast("Network error deleting project", "error");
+      }
     } else if (type === "event") {
       try {
         const res = await fetch(`/api/events/${id}`, {
@@ -151,17 +189,19 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState("approvals"); // "approvals" | "projects" | "events" | "members" | "inbox" | "team" | "site" | "stats"
-
   // Master State Managers
   const [projects, setProjects] = useState([]);
   const [team, setTeam] = useState([]);
   const [stats, setStats] = useState([]);
   const [siteContent, setSiteContent] = useState({});
   const [events, setEvents] = useState([]);
+  const [avenues, setAvenues] = useState([]);
   const [memberApplicants, setMemberApplicants] = useState([]);
   const [contactMessages, setContactMessages] = useState([]);
   const [mediaItems, setMediaItems] = useState([]);
+  const [cloudinaryPhotos, setCloudinaryPhotos] = useState([]);
+  const [mediaViewMode, setMediaViewMode] = useState("gallery"); // "gallery" | "articles"
+  const [isUploadingCloudinaryPhoto, setIsUploadingCloudinaryPhoto] = useState(false);
   const [mediaFilterType, setMediaFilterType] = useState("all");
   const [isAddingMedia, setIsAddingMedia] = useState(false);
   const [editingMedia, setEditingMedia] = useState(null);
@@ -216,10 +256,16 @@ export default function AdminDashboardPage() {
     date: new Date().toISOString().split("T")[0],
     impact: "100+ Participants",
     description: "",
-    fullDescription: "",
-    image: "/images/projects/project1.jpg",
-    images: ["/images/projects/project1.jpg"],
-    videoUrl: "",
+    image: "",
+    images: [],
+    driveLink: "",
+    proposalPdf: "",
+    proposalPdfName: "",
+    reportPdf: "",
+    reportPdfName: "",
+    projectChair: "",
+    projectSecretary: "",
+    projectTreasurer: "",
     submittedBy: "admin@sltc.ac.lk",
     status: "approved",
   });
@@ -248,6 +294,7 @@ export default function AdminDashboardPage() {
     setStats(getStoredStats());
     setSiteContent(getStoredSiteContent());
     setMediaItems(getStoredMedia());
+    setAvenues(getStoredAvenues());
 
     // Fetch live site settings from MongoDB API
     fetch("/api/settings")
@@ -263,14 +310,14 @@ export default function AdminDashboardPage() {
     fetch("/api/projects?status=all")
       .then((res) => res.json())
       .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.success && Array.isArray(json.data)) {
           setProjects(json.data);
         }
       })
       .catch((err) => console.log("Admin projects API fallback:", err));
 
-    // Fetch live events from API
-    fetch("/api/events")
+    // Fetch live events from API (fetch all approval statuses for admin)
+    fetch("/api/events?approvalStatus=all&status=all")
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {
@@ -278,6 +325,16 @@ export default function AdminDashboardPage() {
         }
       })
       .catch((err) => console.log("Admin events API fallback:", err));
+
+    // Fetch live Cloudinary uploaded media assets
+    fetch("/api/upload")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setCloudinaryPhotos(json.data);
+        }
+      })
+      .catch((err) => console.log("Admin Cloudinary photos API fallback:", err));
   }, []);
 
   // Fetch admin protected data when authenticated
@@ -312,24 +369,54 @@ export default function AdminDashboardPage() {
     }
   }, [isProjectEditor, activeTab]);
 
-  // Direct File Reader for Admin Uploads (Photos)
-  const handleAdminFileUpload = (e, callback) => {
+  // Cloudinary Direct Media Upload for Admin
+  const handleAdminFileUpload = async (e, callback) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     
-    const readUrls = [];
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        if (typeof evt.target?.result === "string") {
-          readUrls.push(evt.target.result);
-          if (readUrls.length === files.length) {
-            callback(readUrls.length === 1 ? readUrls[0] : readUrls);
-          }
+    showToast(`Uploading ${files.length} asset(s) to Cloudinary CDN...`, "info");
+    const uploadedUrls = [];
+
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("title", file.name || "Admin Upload");
+        formData.append("avenue", "General");
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (json.success && json.data?.imageUrl) {
+          uploadedUrls.push(json.data.imageUrl);
+        } else {
+          // Fallback to local DataURL if direct upload returns error
+          const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (evt) => resolve(evt.target?.result);
+            reader.readAsDataURL(file);
+          });
+          if (base64) uploadedUrls.push(base64);
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (uploadErr) {
+        console.warn("Upload fallback to local reader:", uploadErr);
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (evt) => resolve(evt.target?.result);
+          reader.readAsDataURL(file);
+        });
+        if (base64) uploadedUrls.push(base64);
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      showToast("Media successfully saved to Cloudinary CDN!", "success");
+      callback(uploadedUrls.length === 1 ? uploadedUrls[0] : uploadedUrls);
+    }
   };
 
   // --- PROJECT ACTIONS ---
@@ -457,6 +544,48 @@ export default function AdminDashboardPage() {
     requestDelete("event", id, ev?.title || "this event");
   };
 
+  const handleApproveEvent = async (id) => {
+    try {
+      const res = await fetch(`/api/events/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalStatus: "approved" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEvents((prev) => prev.map((e) => ((e._id || e.id) === id ? { ...e, approvalStatus: "approved" } : e)));
+        showToast("Upcoming Event approved and published to live website!", "success");
+      } else {
+        showToast(data.error || "Failed to approve event", "error");
+      }
+    } catch (err) {
+      console.error("Approve event error:", err);
+      showToast("Network error approving event", "error");
+    }
+  };
+
+  const handleRejectEvent = async (id) => {
+    try {
+      const res = await fetch(`/api/events/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalStatus: "rejected" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEvents((prev) => prev.map((e) => ((e._id || e.id) === id ? { ...e, approvalStatus: "rejected" } : e)));
+        showToast("Upcoming Event proposal rejected.", "info");
+      } else {
+        showToast(data.error || "Failed to reject event", "error");
+      }
+    } catch (err) {
+      console.error("Reject event error:", err);
+      showToast("Network error rejecting event", "error");
+    }
+  };
+
   // --- MEDIA CMS ACTIONS ---
   const handleAddMediaSubmit = (e) => {
     e.preventDefault();
@@ -500,6 +629,54 @@ export default function AdminDashboardPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "rejected" }),
     }).catch((err) => console.log("Media reject sync error:", err));
+  };
+
+  const handleDirectCloudinaryUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingCloudinaryPhoto(true);
+    showToast("Uploading photo to Cloudinary CDN...", "info");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("title", file.name.replace(/\.[^/.]+$/, ""));
+      formData.append("avenue", "General");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setCloudinaryPhotos((prev) => [json.data, ...prev]);
+        showToast("Photo uploaded to Cloudinary successfully!", "success");
+      } else {
+        showToast(json.error || "Failed to upload photo", "error");
+      }
+    } catch (err) {
+      showToast("Error uploading photo", "error");
+    } finally {
+      setIsUploadingCloudinaryPhoto(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleDeleteCloudinaryPhoto = async (id) => {
+    try {
+      const res = await fetch(`/api/upload?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (json.success) {
+        setCloudinaryPhotos((prev) => prev.filter((p) => p._id !== id));
+        showToast("Photo deleted from Cloudinary & database!", "success");
+      } else {
+        showToast(json.error || "Failed to delete photo", "error");
+      }
+    } catch (err) {
+      showToast("Error deleting photo", "error");
+    }
   };
 
   const handleSaveMediaEdit = async (e) => {
@@ -606,15 +783,37 @@ export default function AdminDashboardPage() {
   };
 
   const handleSaveSiteCMS = (e) => {
-    e.preventDefault();
-    const updated = saveStoredSiteContent(siteContent);
+    if (e) e.preventDefault();
+    const payload = {
+      ...siteContent,
+      stats,
+      avenues,
+    };
+    const updated = saveStoredSiteContent(payload);
     setSiteContent(updated);
-    showToast("Full Website Global CMS Content saved & synchronized with MongoDB!", "success");
+    if (avenues && avenues.length > 0) {
+      saveStoredAvenues(avenues);
+    }
+    if (stats && stats.length > 0) {
+      saveStoredStats(stats);
+    }
+    showToast("Website Global Content saved & synchronized to MongoDB Atlas!", "success");
   };
 
-  const pendingCount = projects.filter((p) => p.status === "pending").length;
+  const pendingProjects = projects.filter((p) => p.status === "pending");
+  const pendingEvents = events.filter((e) => e.approvalStatus === "pending");
+  const pendingCount = pendingProjects.length + pendingEvents.length;
   const unreadMessagesCount = contactMessages.filter((m) => m.status === "unread").length;
   const pendingMembersCount = memberApplicants.filter((m) => m.status === "pending").length;
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen bg-[#07090e] pt-32 text-center text-slate-400">
+        <div className="inline-block w-8 h-8 border-2 border-[#e6007e] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs uppercase tracking-widest font-bold">Verifying Administrator Session...</p>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return <AdminLoginPortal />;
@@ -623,27 +822,35 @@ export default function AdminDashboardPage() {
   // Filtered lists
   const filteredProjects = projects.filter((p) => {
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
+    const s = (search || "").toLowerCase();
     const matchSearch =
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      (p.avenue || "").toLowerCase().includes(search.toLowerCase());
+      !s ||
+      (p.title || "").toLowerCase().includes(s) ||
+      (p.description || "").toLowerCase().includes(s) ||
+      (p.avenue || "").toLowerCase().includes(s);
     return matchStatus && matchSearch;
   });
 
   const filteredEvents = events.filter((ev) => {
-    const matchAvenue =
-      eventFilterAvenue === "All" ||
-      ev.avenue === eventFilterAvenue ||
-      (ev.avenue && eventFilterAvenue.toLowerCase().includes(ev.avenue.toLowerCase())) ||
-      (ev.avenue && ev.avenue.toLowerCase().includes(eventFilterAvenue.toLowerCase().replace(" avenue", "")));
-    return matchAvenue;
+    if (eventFilterAvenue === "All") return true;
+    const evAve = (ev.avenue || "").toLowerCase();
+    const targetAve = (eventFilterAvenue || "").toLowerCase();
+    return (
+      evAve === targetAve ||
+      (evAve && targetAve.includes(evAve)) ||
+      (evAve && evAve.includes(targetAve.replace(" avenue", "")))
+    );
   });
 
   const filteredMembers = memberApplicants.filter((m) => {
     const matchStatus = memberFilterStatus === "all" || m.status === memberFilterStatus;
+    const ms = (memberSearch || "").toLowerCase();
     const matchSearch =
-      (m.fullName || "").toLowerCase().includes(memberSearch.toLowerCase()) ||
-      (m.studentId || "").toLowerCase().includes(memberSearch.toLowerCase()) ||
-      (m.email || "").toLowerCase().includes(memberSearch.toLowerCase());
+      !ms ||
+      (m.fullName || "").toLowerCase().includes(ms) ||
+      (m.studentId || "").toLowerCase().includes(ms) ||
+      (m.email || "").toLowerCase().includes(ms) ||
+      (m.avenue || "").toLowerCase().includes(ms);
     return matchStatus && matchSearch;
   });
 
@@ -666,12 +873,21 @@ export default function AdminDashboardPage() {
           </h1>
         </div>
 
-        <button
-          onClick={logoutAdmin}
-          className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white self-start sm:self-auto cursor-pointer"
-        >
-          Logout Session ({isSuperAdmin ? "Master Admin" : "Project Editor"})
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link
+            href="/"
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white transition-all flex items-center gap-1.5"
+          >
+            <Globe size={14} className="text-[#e6007e]" />
+            <span>View Public Website</span>
+          </Link>
+          <button
+            onClick={logoutAdmin}
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-500/50 text-xs font-bold text-slate-300 hover:text-rose-300 cursor-pointer transition-all"
+          >
+            Logout ({isSuperAdmin ? "Master Admin" : "Editor"})
+          </button>
+        </div>
       </div>
 
       {/* Executive Quick Stats Summary Bar */}
@@ -794,6 +1010,18 @@ export default function AdminDashboardPage() {
       {/* Main Admin Tab Navigation Bar */}
       <div className="flex flex-wrap gap-2.5 p-2 rounded-2xl bg-[#0c1017] border border-slate-800">
         <button
+          onClick={() => setActiveTab("overview")}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "overview"
+              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+              : "text-slate-400 hover:text-white hover:bg-slate-900"
+          }`}
+        >
+          <BarChart3 size={16} />
+          <span>Overview</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("approvals")}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === "approvals"
@@ -882,7 +1110,7 @@ export default function AdminDashboardPage() {
               }`}
             >
               <Globe size={16} />
-              <span>Site CMS</span>
+              <span>Visual Site Studio</span>
             </button>
 
             <button
@@ -912,54 +1140,345 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* TAB 1: APPROVALS QUEUE */}
-      {activeTab === "approvals" && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Pending Project Submissions</h2>
-            <span className="text-xs text-slate-400">{pendingCount} projects pending review</span>
+      {/* TAB 0: MASTER CLUB OVERVIEW */}
+      {activeTab === "overview" && (
+        <div className="space-y-8">
+          {/* Welcome & Command Status Hero */}
+          <div className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#160613] via-[#0c1017] to-[#07090e] border border-[#e6007e]/30 shadow-2xl">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_center,_rgba(230,0,126,0.18)_0%,_transparent_70%)] pointer-events-none" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/15 border border-[#e6007e]/40 text-[#ff66ab] text-xs font-bold uppercase tracking-wider">
+                  <ShieldCheck size={14} />
+                  <span>Club Master Command Center</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white">
+                  Welcome to Rotaract SLTC Master Dashboard
+                </h2>
+                <p className="text-slate-400 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                  Oversee all frontline operations, review pending submissions, manage 8 avenues of service, 
+                  track club membership growth, and update dynamic media across the SLTC website in realtime.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap sm:flex-nowrap gap-2 shrink-0">
+                <button
+                  onClick={() => setActiveTab("approvals")}
+                  className="px-4 py-2.5 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-[#e6007e]/30 cursor-pointer"
+                >
+                  <Clock size={15} />
+                  <span>Review Approvals ({pendingCount})</span>
+                </button>
+                <button
+                  onClick={() => { setActiveTab("projects"); setIsAddingProject(true); }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <PlusCircle size={15} />
+                  <span>Add Project</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          {projects.filter((p) => p.status === "pending").length === 0 ? (
-            <div className="p-12 text-center rounded-3xl bg-[#0c1017] border border-slate-800">
-              <CheckCircle2 size={40} className="text-emerald-500 mx-auto mb-3" />
-              <p className="text-slate-300 font-semibold">No pending submissions!</p>
-              <p className="text-slate-400 text-xs mt-1">All project proposals are reviewed.</p>
+          {/* Quick Action Matrix */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+              <FolderKanban size={16} className="text-[#e6007e]" />
+              <span>Quick Operational Shortcuts</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <button
+                onClick={() => setActiveTab("approvals")}
+                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-[#e6007e] text-left transition-all group hover:scale-[1.02] cursor-pointer"
+              >
+                <Clock size={20} className="text-[#e6007e] mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-white block">Approvals</span>
+                <span className="text-[10px] text-slate-400">{pendingCount} awaiting</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("members")}
+                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-purple-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
+              >
+                <Users size={20} className="text-purple-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-white block">Applicants</span>
+                <span className="text-[10px] text-slate-400">{memberApplicants.length} registered</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab("projects"); setIsAddingProject(true); }}
+                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-cyan-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
+              >
+                <PlusCircle size={20} className="text-cyan-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-white block">New Project</span>
+                <span className="text-[10px] text-slate-400">Publish service</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab("events"); setIsAddingEvent(true); }}
+                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-amber-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
+              >
+                <Calendar size={20} className="text-amber-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-white block">New Event</span>
+                <span className="text-[10px] text-slate-400">Schedule flyer</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("media")}
+                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-pink-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
+              >
+                <Newspaper size={20} className="text-pink-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-white block">Media CMS</span>
+                <span className="text-[10px] text-slate-400">{mediaItems.length} publications</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("site")}
+                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-emerald-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
+              >
+                <Sparkles size={20} className="text-emerald-400 mb-2 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-white block">Visual Studio</span>
+                <span className="text-[10px] text-slate-400">Live Page Editor</span>
+              </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects
-                .filter((p) => p.status === "pending")
-                .map((project) => (
-                  <div
-                    key={project.id || project._id}
-                    className="p-5 rounded-2xl bg-[#0c1017] border border-amber-500/30 space-y-4 shadow-xl"
-                  >
-                    <div className="relative h-44 rounded-xl overflow-hidden bg-slate-900">
-                      <Image
-                        src={project.image || "/images/projects/project1.jpg"}
-                        alt={project.title}
-                        fill
-                        className="object-cover"
-                      />
-                      <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase">
-                        Pending
+          </div>
+
+          {/* Split Section: Pending Approvals Queue Peek & Latest Inquiries */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Approvals Peek */}
+            <div className="p-6 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Clock size={18} className="text-[#e6007e]" />
+                  <h3 className="text-base font-bold text-white">Pending Approvals Queue</h3>
+                </div>
+                <button
+                  onClick={() => setActiveTab("approvals")}
+                  className="text-xs text-[#ff66ab] hover:underline font-semibold cursor-pointer"
+                >
+                  View All ({pendingCount})
+                </button>
+              </div>
+
+              {pendingCount === 0 ? (
+                <div className="py-8 text-center text-slate-500 text-xs">
+                  <CheckCircle2 size={32} className="text-emerald-500/50 mx-auto mb-2" />
+                  <p className="text-slate-400 font-semibold">Approvals Queue is Clear!</p>
+                  <p className="text-slate-600 mt-0.5">No pending project proposals awaiting approval.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {projects.filter(p => p.status === "pending").slice(0, 3).map((p) => (
+                    <div key={p.id || p._id} className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-white truncate">{p.title}</h4>
+                        <span className="text-[10px] text-cyan-400 block">{p.avenue}</span>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("approvals")}
+                        className="px-3 py-1.5 rounded-lg bg-[#e6007e] text-white text-[10px] font-bold uppercase shrink-0 cursor-pointer"
+                      >
+                        Review
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Member Applicants Peek */}
+            <div className="p-6 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Users size={18} className="text-purple-400" />
+                  <h3 className="text-base font-bold text-white">Recent Member Applicants</h3>
+                </div>
+                <button
+                  onClick={() => setActiveTab("members")}
+                  className="text-xs text-purple-400 hover:underline font-semibold cursor-pointer"
+                >
+                  View All ({memberApplicants.length})
+                </button>
+              </div>
+
+              {memberApplicants.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 text-xs">
+                  <Users size={32} className="text-slate-600 mx-auto mb-2" />
+                  <p className="text-slate-400 font-semibold">No member applications yet</p>
+                  <p className="text-slate-600 mt-0.5">New signups from /join-us will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {memberApplicants.slice(0, 3).map((m) => (
+                    <div key={m._id || m.id} className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-white truncate">{m.fullName}</h4>
+                        <span className="text-[10px] text-slate-400 block">{m.studentId || m.faculty || m.email}</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 ${
+                        m.status === "approved"
+                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                          : "bg-amber-950 text-amber-400 border border-amber-800"
+                      }`}>
+                        {m.status || "pending"}
                       </span>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
-                    <div>
-                      <span className="text-xs font-semibold text-[#e6007e] uppercase tracking-wider">
-                        {project.avenue?.replace(/&amp;/gi, "&")}
-                      </span>
-                      <h3 className="text-lg font-bold text-white mt-1 line-clamp-1">
-                        {project.title}
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                        {project.description}
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-2">
-                        By: <span className="text-slate-300 font-medium">{project.submittedBy}</span>
-                      </p>
+          {/* System Status & Infrastructure Bar */}
+          <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-slate-300 font-semibold">Admin Account:</span>
+              <span className="text-white font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                rotaractsltc@gmail.com
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-[11px]">
+              <span>Role: <strong className="text-emerald-400 uppercase">{isSuperAdmin ? "Super Admin" : "Project Editor"}</strong></span>
+              <span>Session: <strong className="text-white">Active Cryptographic HMAC</strong></span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 1: APPROVALS QUEUE (PROJECTS & UPCOMING EVENTS) */}
+      {activeTab === "approvals" && (
+        <div className="space-y-10">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Clock size={20} className="text-[#e6007e]" />
+                <span>Executive Approvals Queue</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Review, edit, approve, or reject public proposals submitted by club members and visitors.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-[#e6007e]/15 border border-[#e6007e]/40 text-[#ff4d94] text-xs font-bold">
+              {pendingCount} Total In Queue
+            </span>
+          </div>
+
+          {/* SECTION 1: PENDING PROJECTS */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <FolderKanban size={16} className="text-cyan-400" />
+                <span>Pending Project Submissions</span>
+              </h3>
+              <span className="text-xs text-slate-400">{pendingProjects.length} projects pending</span>
+            </div>
+
+            {pendingProjects.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl bg-[#0c1017] border border-slate-800">
+                <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-2" />
+                <p className="text-slate-300 text-sm font-semibold">No pending project proposals!</p>
+                <p className="text-slate-500 text-xs mt-0.5">All submitted projects have been processed.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pendingProjects.map((project) => (
+                  <div
+                    key={project.id || project._id}
+                    className="p-5 rounded-2xl bg-[#0c1017] border border-amber-500/30 space-y-4 shadow-xl flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="relative h-44 rounded-xl overflow-hidden bg-slate-900">
+                        {project.image ? (
+                          <Image
+                            src={project.image}
+                            alt={project.title}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-xs uppercase bg-slate-950">
+                            No Showcase Photo
+                          </div>
+                        )}
+                        <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase">
+                          Pending Project
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-xs font-semibold text-[#e6007e] uppercase tracking-wider">
+                          {project.avenue?.replace(/&amp;/gi, "&")}
+                        </span>
+                        <h3 className="text-lg font-bold text-white mt-1 line-clamp-1">
+                          {project.title}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                          {project.description}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-2">
+                          By: <span className="text-slate-300 font-medium">{project.submittedBy}</span>
+                        </p>
+
+                        {project.driveLink && (
+                          <a
+                            href={project.driveLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-[#e6007e] hover:underline font-semibold mt-2"
+                          >
+                            📁 View Media Album (Google Drive) ↗
+                          </a>
+                        )}
+
+                        {(project.projectChair || project.projectSecretary || project.projectTreasurer) && (
+                          <div className="text-[10px] text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 space-y-1 mt-2.5">
+                            {project.projectChair && <div><strong className="text-slate-300">Chair:</strong> {project.projectChair}</div>}
+                            {project.projectSecretary && <div><strong className="text-slate-300">Secretary:</strong> {project.projectSecretary}</div>}
+                            {project.projectTreasurer && <div><strong className="text-slate-300">Treasurer:</strong> {project.projectTreasurer}</div>}
+                          </div>
+                        )}
+
+                        {(project.proposalPdf || project.reportPdf) && (
+                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-700/80 space-y-1.5 mt-2.5">
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
+                              📄 Project Documents (PDF):
+                            </span>
+                            <div className="flex flex-col gap-1.5">
+                              {project.proposalPdf && (
+                                <a
+                                  href={project.proposalPdf}
+                                  target="_blank"
+                                  download={project.proposalPdfName || `${project.title}_Proposal.pdf`}
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#0c1017] hover:bg-[#e6007e]/20 border border-slate-700 hover:border-[#e6007e] text-xs font-semibold text-white transition-colors"
+                                >
+                                  <span className="flex items-center gap-1.5 truncate">
+                                    <span className="text-[#e6007e]">📥</span>
+                                    <span className="truncate">Proposal: {project.proposalPdfName || "Proposal.pdf"}</span>
+                                  </span>
+                                  <span className="text-[10px] text-[#e6007e] font-bold shrink-0 ml-2">Download</span>
+                                </a>
+                              )}
+                              {project.reportPdf && (
+                                <a
+                                  href={project.reportPdf}
+                                  target="_blank"
+                                  download={project.reportPdfName || `${project.title}_Report.pdf`}
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#0c1017] hover:bg-[#e6007e]/20 border border-slate-700 hover:border-[#e6007e] text-xs font-semibold text-white transition-colors"
+                                >
+                                  <span className="flex items-center gap-1.5 truncate">
+                                    <span className="text-cyan-400">📥</span>
+                                    <span className="truncate">Report: {project.reportPdfName || "Report.pdf"}</span>
+                                  </span>
+                                  <span className="text-[10px] text-cyan-400 font-bold shrink-0 ml-2">Download</span>
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-3 border-t border-slate-800/80">
@@ -1001,8 +1520,121 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 2: PENDING UPCOMING EVENTS */}
+          <div className="space-y-4 pt-6 border-t border-slate-800">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Calendar size={16} className="text-[#e6007e]" />
+                <span>Pending Upcoming Event Submissions</span>
+              </h3>
+              <span className="text-xs text-slate-400">{pendingEvents.length} events pending</span>
             </div>
-          )}
+
+            {pendingEvents.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl bg-[#0c1017] border border-slate-800">
+                <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-2" />
+                <p className="text-slate-300 text-sm font-semibold">No pending event proposals!</p>
+                <p className="text-slate-500 text-xs mt-0.5">All upcoming event submissions have been reviewed.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pendingEvents.map((ev) => (
+                  <div
+                    key={ev._id || ev.id}
+                    className="p-5 rounded-2xl bg-[#0c1017] border border-amber-500/30 space-y-4 shadow-xl flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="relative h-44 rounded-xl overflow-hidden bg-slate-900">
+                        <Image
+                          src={ev.image || "/images/hero.jpg"}
+                          alt={ev.title}
+                          fill
+                          className="object-cover"
+                        />
+                        <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase">
+                          Pending Event
+                        </span>
+                        <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-slate-950/80 border border-slate-700 text-slate-300 text-[10px] font-semibold">
+                          {ev.date}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-xs font-semibold text-[#e6007e] uppercase tracking-wider">
+                          {ev.avenue}
+                        </span>
+                        <h3 className="text-lg font-bold text-white mt-1 line-clamp-1">
+                          {ev.title}
+                        </h3>
+                        {ev.subtitle && <p className="text-xs text-[#ff66ab] mt-0.5 line-clamp-1">{ev.subtitle}</p>}
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                          {ev.description}
+                        </p>
+                        
+                        <div className="mt-3 space-y-1 text-[11px] text-slate-400">
+                          <div className="flex items-center gap-2">
+                            <Clock size={12} className="text-[#e6007e]" />
+                            <span>{ev.time || "TBD"}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin size={12} className="text-[#e6007e]" />
+                            <span className="truncate">{ev.location}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-slate-400 mt-2">
+                          Submitted by: <span className="text-slate-300 font-medium">{ev.submittedBy || "Club Member"}</span>
+                          {ev.submitterEmail && <span className="text-slate-500 block truncate">({ev.submitterEmail})</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-3 border-t border-slate-800/80">
+                      <button
+                        type="button"
+                        onClick={() => setEditingEvent(ev)}
+                        className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-[#e6007e] font-bold text-xs uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="Edit event details before approving"
+                      >
+                        <Edit3 size={14} className="text-[#e6007e]" />
+                        <span>Edit</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleApproveEvent(ev._id || ev.id)}
+                        className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase transition-all cursor-pointer shadow-md shadow-emerald-950 flex items-center justify-center gap-1.5"
+                      >
+                        <Check size={14} />
+                        <span>Approve</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRejectEvent(ev._id || ev.id)}
+                        className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-rose-950/70 border border-slate-800 hover:border-rose-700/60 text-slate-400 hover:text-rose-300 font-bold text-xs uppercase transition-all cursor-pointer"
+                      >
+                        Reject
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEvent(ev._id || ev.id)}
+                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-rose-900/40 text-rose-400 hover:text-rose-300 border border-slate-800 transition-all cursor-pointer"
+                        title="Delete Event Proposal"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1051,12 +1683,18 @@ export default function AdminDashboardPage() {
               >
                 <div>
                   <div className="relative h-44 rounded-xl overflow-hidden bg-slate-900 mb-3">
-                    <Image
-                      src={project.image || "/images/projects/project1.jpg"}
-                      alt={project.title}
-                      fill
-                      className="object-cover"
-                    />
+                    {project.image ? (
+                      <Image
+                        src={project.image}
+                        alt={project.title}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-xs uppercase bg-slate-950">
+                        No Photo
+                      </div>
+                    )}
                     <span
                       className={`absolute top-3 right-3 px-3 py-1 rounded-full font-black text-[10px] tracking-wider uppercase ${
                         project.status === "approved"
@@ -1079,6 +1717,35 @@ export default function AdminDashboardPage() {
                   <p className="text-xs text-slate-400 mt-1 line-clamp-2">
                     {project.description}
                   </p>
+
+                  {(project.proposalPdf || project.reportPdf) && (
+                    <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-800/60">
+                      {project.proposalPdf && (
+                        <a
+                          href={project.proposalPdf}
+                          target="_blank"
+                          download={project.proposalPdfName || "Proposal.pdf"}
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-[#e6007e] hover:underline font-bold flex items-center gap-1"
+                          title="Download Project Proposal"
+                        >
+                          📄 Proposal PDF ↗
+                        </a>
+                      )}
+                      {project.reportPdf && (
+                        <a
+                          href={project.reportPdf}
+                          target="_blank"
+                          download={project.reportPdfName || "Report.pdf"}
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-cyan-400 hover:underline font-bold flex items-center gap-1"
+                          title="Download Project Report"
+                        >
+                          📊 Report PDF ↗
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
@@ -1090,10 +1757,11 @@ export default function AdminDashboardPage() {
                     >
                       <Edit3 size={14} />
                     </button>
-                    {isSuperAdmin && (
+                    {(isSuperAdmin || isAdmin || isProjectEditor) && (
                       <button
                         onClick={() => handleDeleteProject(project.id || project._id)}
                         className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:text-rose-300"
+                        title="Delete Project"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -1587,105 +2255,20 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* TAB 7: GLOBAL SITE CMS */}
+      {/* TAB 7: VISUAL SITE CUSTOMIZER STUDIO (WYSIWYG) */}
       {isSuperAdmin && activeTab === "site" && (
-        <form onSubmit={handleSaveSiteCMS} className="space-y-8 max-w-4xl">
-          <div className="p-6 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl">
-            <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-              <Globe size={18} className="text-[#e6007e]" />
-              <span>Hero Section Banner Content</span>
-            </h3>
-            <Input
-              label="Hero Main Title"
-              value={siteContent.heroTitle || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, heroTitle: e.target.value })}
-            />
-            <Input
-              label="Hero Subtitle / Tagline"
-              value={siteContent.heroSubtitle || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, heroSubtitle: e.target.value })}
-            />
-            <Input
-              label="District Badge Text"
-              value={siteContent.districtBadge || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, districtBadge: e.target.value })}
-            />
-            <Input
-              label="Primary CTA Button Text"
-              value={siteContent.heroButtonText || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, heroButtonText: e.target.value })}
-            />
-          </div>
-
-          <div className="p-6 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl">
-            <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-              <Users size={18} className="text-[#e6007e]" />
-              <span>Who We Are &amp; Mission Statements</span>
-            </h3>
-            <Input
-              label="Who We Are Heading"
-              value={siteContent.whoWeAreTitle || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, whoWeAreTitle: e.target.value })}
-            />
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
-                Main Organization Description
-              </label>
-              <textarea
-                rows={4}
-                value={siteContent.whoWeAreDescription || ""}
-                onChange={(e) => setSiteContent({ ...siteContent, whoWeAreDescription: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
-              />
-            </div>
-            <Input
-              label="Mission Statement"
-              value={siteContent.missionText || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, missionText: e.target.value })}
-            />
-            <Input
-              label="Vision Statement"
-              value={siteContent.visionText || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, visionText: e.target.value })}
-            />
-          </div>
-
-          <div className="p-6 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl">
-            <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-              <Mail size={18} className="text-[#e6007e]" />
-              <span>Official University &amp; Contact Coordinates</span>
-            </h3>
-            <Input
-              label="Campus Address"
-              value={siteContent.address || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, address: e.target.value })}
-            />
-            <Input
-              label="Official Club Email"
-              value={siteContent.email || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, email: e.target.value })}
-            />
-            <Input
-              label="Facebook URL"
-              value={siteContent.facebookUrl || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, facebookUrl: e.target.value })}
-            />
-            <Input
-              label="Instagram URL"
-              value={siteContent.instagramUrl || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, instagramUrl: e.target.value })}
-            />
-            <Input
-              label="LinkedIn URL"
-              value={siteContent.linkedinUrl || ""}
-              onChange={(e) => setSiteContent({ ...siteContent, linkedinUrl: e.target.value })}
-            />
-          </div>
-
-          <Button type="submit" className="py-3 px-8 text-xs font-bold uppercase tracking-wider">
-            Save Global Site CMS Content
-          </Button>
-        </form>
+        <VisualSiteCustomizer
+          siteContent={siteContent}
+          setSiteContent={setSiteContent}
+          stats={stats}
+          setStats={setStats}
+          avenues={avenues}
+          setAvenues={setAvenues}
+          events={events}
+          onSave={handleSaveSiteCMS}
+          showToast={showToast}
+          handleFileUpload={handleAdminFileUpload}
+        />
       )}
 
       {/* TAB 8: LIVE COUNTER STATS */}
@@ -1802,25 +2385,141 @@ export default function AdminDashboardPage() {
               />
             </div>
 
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <label className="text-xs font-bold uppercase text-slate-300 block">Project Leadership Committee</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  label="Project Chair"
+                  value={editingProject.projectChair || ""}
+                  placeholder="e.g. Kasun Perera"
+                  onChange={(e) => setEditingProject({ ...editingProject, projectChair: e.target.value })}
+                />
+                <Input
+                  label="Project Secretary"
+                  value={editingProject.projectSecretary || ""}
+                  placeholder="e.g. Amaya Silva"
+                  onChange={(e) => setEditingProject({ ...editingProject, projectSecretary: e.target.value })}
+                />
+                <Input
+                  label="Project Treasurer"
+                  value={editingProject.projectTreasurer || ""}
+                  placeholder="e.g. Dineth Fernando"
+                  onChange={(e) => setEditingProject({ ...editingProject, projectTreasurer: e.target.value })}
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Summary Description</label>
+              <Input
+                label="Google Drive Folder Link (Photos & Videos Album)"
+                type="url"
+                value={editingProject.driveLink || ""}
+                placeholder="https://drive.google.com/drive/folders/..."
+                onChange={(e) => setEditingProject({ ...editingProject, driveLink: e.target.value })}
+              />
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <label className="text-xs font-bold uppercase text-slate-300 block">
+                Project Documents (PDF)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* Proposal PDF */}
+                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">1. Proposal PDF</span>
+                  {editingProject.proposalPdf ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <a
+                        href={editingProject.proposalPdf}
+                        target="_blank"
+                        download={editingProject.proposalPdfName || "Proposal.pdf"}
+                        rel="noopener noreferrer"
+                        className="text-xs text-[#e6007e] hover:underline font-semibold truncate"
+                      >
+                        📥 {editingProject.proposalPdfName || "Download Proposal"}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setEditingProject({ ...editingProject, proposalPdf: "", proposalPdfName: "" })}
+                        className="text-rose-400 text-[10px] hover:underline shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        fd.append("docType", "proposal");
+                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
+                        const json = await res.json();
+                        if (json.success && json.url) {
+                          setEditingProject({ ...editingProject, proposalPdf: json.url, proposalPdfName: json.fileName || file.name });
+                        }
+                      }}
+                      className="text-xs text-slate-400 block"
+                    />
+                  )}
+                </div>
+
+                {/* Report PDF */}
+                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">2. Report PDF</span>
+                  {editingProject.reportPdf ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <a
+                        href={editingProject.reportPdf}
+                        target="_blank"
+                        download={editingProject.reportPdfName || "Report.pdf"}
+                        rel="noopener noreferrer"
+                        className="text-xs text-cyan-400 hover:underline font-semibold truncate"
+                      >
+                        📥 {editingProject.reportPdfName || "Download Report"}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setEditingProject({ ...editingProject, reportPdf: "", reportPdfName: "" })}
+                        className="text-rose-400 text-[10px] hover:underline shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        fd.append("docType", "report");
+                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
+                        const json = await res.json();
+                        if (json.success && json.url) {
+                          setEditingProject({ ...editingProject, reportPdf: json.url, reportPdfName: json.fileName || file.name });
+                        }
+                      }}
+                      className="text-xs text-slate-400 block"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Project Description *</label>
               <textarea
                 rows={3}
                 value={editingProject.description || ""}
                 onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-[#e6007e]"
                 required
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Full Detailed Story / Overview</label>
-              <textarea
-                rows={4}
-                value={editingProject.fullDescription || ""}
-                placeholder="Detailed article about project objectives, execution, and outcomes..."
-                onChange={(e) => setEditingProject({ ...editingProject, fullDescription: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-[#e6007e]"
               />
             </div>
 
@@ -1903,6 +2602,116 @@ export default function AdminDashboardPage() {
             </div>
 
             <Input label="Impact Metric" value={newProjectForm.impact} onChange={(e) => setNewProjectForm({ ...newProjectForm, impact: e.target.value })} />
+
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <label className="text-xs font-bold uppercase text-slate-300 block">Project Leadership Committee</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  label="Project Chair"
+                  value={newProjectForm.projectChair || ""}
+                  placeholder="e.g. Kasun Perera"
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, projectChair: e.target.value })}
+                />
+                <Input
+                  label="Project Secretary"
+                  value={newProjectForm.projectSecretary || ""}
+                  placeholder="e.g. Amaya Silva"
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, projectSecretary: e.target.value })}
+                />
+                <Input
+                  label="Project Treasurer"
+                  value={newProjectForm.projectTreasurer || ""}
+                  placeholder="e.g. Dineth Fernando"
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, projectTreasurer: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <Input
+              label="Google Drive Folder Link (Photos & Videos Album)"
+              type="url"
+              value={newProjectForm.driveLink || ""}
+              placeholder="https://drive.google.com/drive/folders/..."
+              onChange={(e) => setNewProjectForm({ ...newProjectForm, driveLink: e.target.value })}
+            />
+
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <label className="text-xs font-bold uppercase text-slate-300 block">
+                Project Documents (PDF)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* Proposal PDF */}
+                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">1. Proposal PDF</span>
+                  {newProjectForm.proposalPdf ? (
+                    <div className="flex items-center justify-between text-[#e6007e]">
+                      <span className="truncate text-xs">✓ {newProjectForm.proposalPdfName || "Proposal Attached"}</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewProjectForm({ ...newProjectForm, proposalPdf: "", proposalPdfName: "" })}
+                        className="text-rose-400 text-[10px] hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        fd.append("docType", "proposal");
+                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
+                        const json = await res.json();
+                        if (json.success && json.url) {
+                          setNewProjectForm({ ...newProjectForm, proposalPdf: json.url, proposalPdfName: json.fileName || file.name });
+                        }
+                      }}
+                      className="text-xs text-slate-400 block"
+                    />
+                  )}
+                </div>
+
+                {/* Report PDF */}
+                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">2. Report PDF</span>
+                  {newProjectForm.reportPdf ? (
+                    <div className="flex items-center justify-between text-cyan-400">
+                      <span className="truncate text-xs">✓ {newProjectForm.reportPdfName || "Report Attached"}</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewProjectForm({ ...newProjectForm, reportPdf: "", reportPdfName: "" })}
+                        className="text-rose-400 text-[10px] hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        fd.append("docType", "report");
+                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
+                        const json = await res.json();
+                        if (json.success && json.url) {
+                          setNewProjectForm({ ...newProjectForm, reportPdf: json.url, reportPdfName: json.fileName || file.name });
+                        }
+                      }}
+                      className="text-xs text-slate-400 block"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
             <Input label="Summary Description" value={newProjectForm.description} onChange={(e) => setNewProjectForm({ ...newProjectForm, description: e.target.value })} required />
 
             <div>
@@ -2030,6 +2839,33 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-2 gap-4">
               <Input label="Time" value={editingEvent.time || ""} onChange={(e) => setEditingEvent({ ...editingEvent, time: e.target.value })} />
               <Input label="Location" value={editingEvent.location || ""} onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Approval Status</label>
+                <select
+                  value={editingEvent.approvalStatus || "approved"}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, approvalStatus: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="approved">Approved (Live on website)</option>
+                  <option value="pending">Pending Review</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Event Status</label>
+                <select
+                  value={editingEvent.status || "upcoming"}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, status: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="upcoming">Upcoming</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
             </div>
 
             <Input label="Registration Link" value={editingEvent.registrationLink || ""} onChange={(e) => setEditingEvent({ ...editingEvent, registrationLink: e.target.value })} />
@@ -2223,94 +3059,207 @@ export default function AdminDashboardPage() {
         )}
       </AnimatePresence>
 
-    </div>
-  );
       {/* TAB: MEDIA CMS */}
       {activeTab === "media" && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <select
-                value={mediaFilterType}
-                onChange={(e) => setMediaFilterType(e.target.value)}
-                className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none cursor-pointer"
+          {/* Sub Navigation: Switch between Cloudinary Photo Gallery and Articles */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-2xl bg-[#0c1017] border border-slate-800">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMediaViewMode("gallery")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  mediaViewMode === "gallery"
+                    ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
               >
-                <option value="all">All Media ({mediaItems.length})</option>
-                <option value="blog">Blogs Only ({mediaItems.filter(m => m.type === "blog").length})</option>
-                <option value="article">Articles Only ({mediaItems.filter(m => m.type === "article").length})</option>
-                <option value="bulletin">Bulletins Only ({mediaItems.filter(m => m.type === "bulletin").length})</option>
-              </select>
+                Cloudinary Photo Assets ({cloudinaryPhotos.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setMediaViewMode("articles")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  mediaViewMode === "articles"
+                    ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                }`}
+              >
+                Articles & Publications ({mediaItems.length})
+              </button>
             </div>
 
-            <Button
-              onClick={() => setIsAddingMedia(true)}
-              className="py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
-            >
-              <PlusCircle size={16} />
-              <span>Create New Publication / Story</span>
-            </Button>
+            {mediaViewMode === "gallery" ? (
+              <label className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#e6007e] to-[#ff4081] text-white text-xs font-bold uppercase tracking-wider cursor-pointer hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-[#e6007e]/20">
+                <Upload size={14} />
+                <span>{isUploadingCloudinaryPhoto ? "Uploading..." : "Upload Photo to Cloudinary"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleDirectCloudinaryUpload}
+                  disabled={isUploadingCloudinaryPhoto}
+                  className="hidden"
+                />
+              </label>
+            ) : (
+              <Button
+                onClick={() => setIsAddingMedia(true)}
+                className="py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+              >
+                <PlusCircle size={16} />
+                <span>Create New Publication</span>
+              </Button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mediaItems
-              .filter((m) => mediaFilterType === "all" || m.type === mediaFilterType)
-              .map((item) => (
-                <div
-                  key={item.id}
-                  className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          item.type === "blog"
-                            ? "bg-[#e6007e]/20 text-[#e6007e] border border-[#e6007e]/40"
-                            : item.type === "article"
-                            ? "bg-cyan-950 text-cyan-400 border border-cyan-800"
-                            : "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                        }`}
-                      >
-                        {item.type}
-                      </span>
-                      <span className="text-[11px] text-slate-400">{item.date}</span>
-                    </div>
-
-                    <h3 className="text-base font-bold text-white line-clamp-2">{item.title}</h3>
-                    <p className="text-xs text-slate-400 line-clamp-2">{item.summary || item.description}</p>
-                    
-                    {item.author && (
-                      <p className="text-[11px] text-slate-400">
-                        By <strong className="text-slate-300">{item.author}</strong> ({item.avenue || "General"})
-                      </p>
-                    )}
+          {/* VIEW 1: CLOUDINARY PHOTO ASSETS GALLERY */}
+          {mediaViewMode === "gallery" && (
+            <div className="space-y-4">
+              {cloudinaryPhotos.length === 0 ? (
+                <div className="p-12 text-center rounded-3xl bg-[#0c1017] border border-slate-800 space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-[#e6007e] mx-auto">
+                    <Upload size={24} />
                   </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
-                    <span className="text-[10px] text-slate-400">{item.readTime || item.size || item.status}</span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setEditingMedia(item)}
-                        className="py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-[#e6007e] text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                        title="Edit publication"
-                      >
-                        <Edit3 size={13} className="text-[#e6007e]" />
-                        <span>Edit</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteMedia(item.id)}
-                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 text-rose-400 border border-slate-800 transition-all cursor-pointer"
-                        title="Delete publication"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
+                  <h4 className="text-base font-bold text-white">No Cloudinary Photos Uploaded Yet</h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Click &ldquo;Upload Photo to Cloudinary&rdquo; above to host high-speed images on Cloudinary CDN and MongoDB Atlas.
+                  </p>
                 </div>
-              ))}
-          </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {cloudinaryPhotos.map((photo) => (
+                    <div
+                      key={photo._id || photo.imageUrl}
+                      className="group relative rounded-2xl bg-[#0c1017] border border-slate-800 overflow-hidden shadow-xl hover:border-[#e6007e]/50 transition-all flex flex-col justify-between"
+                    >
+                      <div className="aspect-video relative overflow-hidden bg-slate-950">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.imageUrl}
+                          alt={photo.title || "Uploaded Photo"}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[9px] font-bold text-emerald-400 border border-emerald-500/30">
+                          CDN Active
+                        </span>
+                      </div>
+
+                      <div className="p-3.5 space-y-2">
+                        <h4 className="text-xs font-bold text-white truncate" title={photo.title}>
+                          {photo.title || "Untitled Asset"}
+                        </h4>
+                        <span className="text-[10px] text-cyan-400 block font-medium">
+                          {photo.avenue || "General"}
+                        </span>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(photo.imageUrl);
+                              showToast("CDN URL copied to clipboard!", "success");
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] font-bold text-slate-300 hover:text-white transition-all cursor-pointer truncate"
+                            title={photo.imageUrl}
+                          >
+                            Copy URL
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCloudinaryPhoto(photo._id)}
+                            className="p-1 rounded-lg bg-slate-900 hover:bg-rose-950 border border-slate-800 text-rose-400 hover:text-rose-300 transition-all cursor-pointer"
+                            title="Delete Photo from Cloudinary"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 2: ARTICLES & PUBLICATIONS */}
+          {mediaViewMode === "articles" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <select
+                  value={mediaFilterType}
+                  onChange={(e) => setMediaFilterType(e.target.value)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none cursor-pointer"
+                >
+                  <option value="all">All Media ({mediaItems.length})</option>
+                  <option value="blog">Blogs Only ({mediaItems.filter(m => m.type === "blog").length})</option>
+                  <option value="article">Articles Only ({mediaItems.filter(m => m.type === "article").length})</option>
+                  <option value="bulletin">Bulletins Only ({mediaItems.filter(m => m.type === "bulletin").length})</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {mediaItems
+                  .filter((m) => mediaFilterType === "all" || m.type === mediaFilterType)
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              item.type === "blog"
+                                ? "bg-[#e6007e]/20 text-[#e6007e] border border-[#e6007e]/40"
+                                : item.type === "article"
+                                ? "bg-cyan-950 text-cyan-400 border border-cyan-800"
+                                : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                            }`}
+                          >
+                            {item.type}
+                          </span>
+                          <span className="text-[11px] text-slate-400">{item.date}</span>
+                        </div>
+
+                        <h3 className="text-base font-bold text-white line-clamp-2">{item.title}</h3>
+                        <p className="text-xs text-slate-400 line-clamp-2">{item.summary || item.description}</p>
+                        
+                        {item.author && (
+                          <p className="text-[11px] text-slate-400">
+                            By <strong className="text-slate-300">{item.author}</strong> ({item.avenue || "General"})
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                        <span className="text-[10px] text-slate-400">{item.readTime || item.size || item.status}</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingMedia(item)}
+                            className="py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 hover:border-[#e6007e] text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            title="Edit publication"
+                          >
+                            <Edit3 size={13} className="text-[#e6007e]" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMedia(item.id)}
+                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 text-rose-400 border border-slate-800 transition-all cursor-pointer"
+                            title="Delete publication"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2591,5 +3540,21 @@ export default function AdminDashboardPage() {
           </form>
         </div>
       )}
+    </div>
+  );
+}
 
+export default function AdminDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#07090e] pt-32 text-center text-slate-400">
+          <div className="inline-block w-8 h-8 border-2 border-[#e6007e] border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-xs uppercase tracking-widest font-bold">Loading Admin Command Center...</p>
+        </div>
+      }
+    >
+      <AdminDashboardInner />
+    </Suspense>
+  );
 }

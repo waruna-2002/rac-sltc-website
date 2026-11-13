@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Project from "@/models/Project";
 import mongoose from "mongoose";
-import { requireAdmin } from "@/lib/serverAuth";
+import { requireAdmin, getSession } from "@/lib/serverAuth";
 import { memoryStore } from "@/lib/memoryStore";
 
 // GET /api/projects/[id] - Public project details
 export async function GET(request, { params }) {
   const { id } = await params;
+  const session = getSession(request);
+  const isAdmin = session.authenticated;
 
   try {
     await dbConnect();
@@ -27,12 +29,27 @@ export async function GET(request, { params }) {
       );
     }
 
-    return NextResponse.json({ success: true, data: project });
+    const dataObj = project.toObject ? project.toObject() : { ...project };
+    if (!isAdmin) {
+      delete dataObj.proposalPdf;
+      delete dataObj.proposalPdfName;
+      delete dataObj.reportPdf;
+      delete dataObj.reportPdfName;
+    }
+
+    return NextResponse.json({ success: true, data: dataObj });
   } catch (error) {
     console.warn("GET /api/projects/[id] fallback mode:", error.message);
     const item = memoryStore.projects.find((p) => p._id === id || p.id === id || p.slug === id);
     if (item) {
-      return NextResponse.json({ success: true, data: item, fallback: true });
+      const fallbackObj = { ...item };
+      if (!isAdmin) {
+        delete fallbackObj.proposalPdf;
+        delete fallbackObj.proposalPdfName;
+        delete fallbackObj.reportPdf;
+        delete fallbackObj.reportPdfName;
+      }
+      return NextResponse.json({ success: true, data: fallbackObj, fallback: true });
     }
     return NextResponse.json(
       { success: false, error: "Project not found" },
@@ -50,6 +67,13 @@ export async function PATCH(request, { params }) {
 
   const { id } = await params;
   const updates = await request.json().catch(() => ({}));
+
+  if (Array.isArray(updates.images)) {
+    updates.images = updates.images.slice(0, 3);
+    if (!updates.image && updates.images.length > 0) {
+      updates.image = updates.images[0];
+    }
+  }
 
   try {
     await dbConnect();
@@ -95,9 +119,9 @@ export async function PATCH(request, { params }) {
   }
 }
 
-// DELETE /api/projects/[id] - Delete project (Super Admin Only)
+// DELETE /api/projects/[id] - Delete project (Super Admin & Project Editor)
 export async function DELETE(request, { params }) {
-  const auth = requireAdmin(request, ["super_admin"]);
+  const auth = requireAdmin(request, ["super_admin", "project_editor"]);
   if (!auth.authorized) {
     return auth.response;
   }
@@ -107,28 +131,41 @@ export async function DELETE(request, { params }) {
   try {
     await dbConnect();
 
-    const query = mongoose.Types.ObjectId.isValid(id)
-      ? { _id: id }
-      : { slug: id };
-
-    const deleted = await Project.findOneAndDelete(query);
+    let deleted = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deleted = await Project.findByIdAndDelete(id);
+    }
+    if (!deleted) {
+      deleted = await Project.findOneAndDelete({
+        $or: [{ slug: id }, { title: id }],
+      });
+    }
 
     if (!deleted) {
       return NextResponse.json(
-        { success: false, error: "Project not found" },
+        { success: false, error: "Project not found in database" },
         { status: 404 }
+      );
+    }
+
+    // Keep memoryStore in sync
+    if (memoryStore && Array.isArray(memoryStore.projects)) {
+      memoryStore.projects = memoryStore.projects.filter(
+        (p) => String(p._id || p.id) !== String(id) && p.slug !== id && p.title !== id
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Project deleted successfully",
+      message: "Project permanently deleted from database",
     });
   } catch (error) {
     console.warn("DELETE /api/projects/[id] fallback mode:", error.message);
-    memoryStore.projects = memoryStore.projects.filter(
-      (p) => p._id !== id && p.id !== id && p.slug !== id
-    );
+    if (memoryStore && Array.isArray(memoryStore.projects)) {
+      memoryStore.projects = memoryStore.projects.filter(
+        (p) => String(p._id || p.id) !== String(id) && p.slug !== id && p.title !== id
+      );
+    }
     return NextResponse.json({
       success: true,
       message: "Project deleted successfully (Local mode)",

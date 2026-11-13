@@ -9,11 +9,11 @@ import {
   Calendar, 
   Tag, 
   ArrowRight, 
-
   CheckCircle2, 
   Users, 
-  Video, 
-  Images 
+  Images,
+  FolderArchive,
+  ExternalLink
 } from "lucide-react";
 
 export default function ProjectModal({ project, onClose }) {
@@ -23,7 +23,7 @@ export default function ProjectModal({ project, onClose }) {
 
   const galleryImages = (project.images && project.images.length > 0)
     ? project.images
-    : [project.image || "/images/projects/project1.jpg"];
+    : (project.image ? [project.image] : []);
 
   return (
     <AnimatePresence>
@@ -116,21 +116,62 @@ export default function ProjectModal({ project, onClose }) {
               </div>
             )}
 
-            {/* Video Player / Embed */}
-            {project.videoUrl && (
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+            {/* Google Drive Full Album Link */}
+            {project.driveLink && (
+              <a
+                href={project.driveLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#0c1017] via-slate-900 to-[#0c1017] border border-[#e6007e]/40 hover:border-[#e6007e] transition-all group shadow-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#e6007e]/15 text-[#e6007e] flex items-center justify-center font-bold shrink-0 border border-[#e6007e]/30 group-hover:scale-105 transition-transform">
+                    <FolderArchive size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider group-hover:text-[#e6007e] transition-colors flex items-center gap-1.5">
+                      <span>Full Photo &amp; Video Album (Google Drive)</span>
+                      <ExternalLink size={12} className="text-[#e6007e]" />
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-light mt-0.5">
+                      Open complete high-resolution media folder in Google Drive
+                    </p>
+                  </div>
+                </div>
+                <span className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-[#e6007e] group-hover:translate-x-1 transition-transform">
+                  <span>View Album</span>
+                  <ArrowRight size={13} />
+                </span>
+              </a>
+            )}
+
+            {/* Project Leadership Committee */}
+            {(project.projectChair || project.projectSecretary || project.projectTreasurer) && (
+              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Video size={14} className="text-cyan-400" />
-                  <span>Project Video Feature</span>
+                  <Users size={14} className="text-[#e6007e]" />
+                  <span>Project Committee</span>
                 </h4>
-                <a
-                  href={project.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-cyan-400 hover:text-white underline block font-medium truncate"
-                >
-                  ▶ Watch Video Feature ({project.videoUrl})
-                </a>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {project.projectChair && (
+                    <div className="p-2.5 rounded-xl bg-[#0c1017] border border-slate-800">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Project Chairperson</span>
+                      <span className="text-xs font-bold text-white block mt-0.5">{project.projectChair}</span>
+                    </div>
+                  )}
+                  {project.projectSecretary && (
+                    <div className="p-2.5 rounded-xl bg-[#0c1017] border border-slate-800">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Project Secretary</span>
+                      <span className="text-xs font-bold text-white block mt-0.5">{project.projectSecretary}</span>
+                    </div>
+                  )}
+                  {project.projectTreasurer && (
+                    <div className="p-2.5 rounded-xl bg-[#0c1017] border border-slate-800">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Project Treasurer</span>
+                      <span className="text-xs font-bold text-white block mt-0.5">{project.projectTreasurer}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

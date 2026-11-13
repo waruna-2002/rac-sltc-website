@@ -33,7 +33,7 @@ export default function AdminLoginPortal() {
   const { loginAdmin, submitLoginOtp } = useAdmin();
 
   // Login form state
-  const [email, setEmail] = useState("waruna.jajjja@gmail.com");
+  const [email, setEmail] = useState("rotaractsltc@gmail.com");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +51,7 @@ export default function AdminLoginPortal() {
   // Forgot Password modal state
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotStep, setForgotStep] = useState(1); // 1: Email, 2: OTP, 3: New Password, 4: Done
-  const [forgotEmail, setForgotEmail] = useState("waruna.jajjja@gmail.com");
+  const [forgotEmail, setForgotEmail] = useState("rotaractsltc@gmail.com");
   const [forgotOtp, setForgotOtp] = useState("");
   const [forgotTempToken, setForgotTempToken] = useState("");
   const [forgotResetToken, setForgotResetToken] = useState("");
@@ -180,7 +180,7 @@ export default function AdminLoginPortal() {
     setShowForgotModal(true);
     setForgotStep(1);
     setForgotError("");
-    setForgotEmail(email || "waruna.jajjja@gmail.com");
+    setForgotEmail(email || "rotaractsltc@gmail.com");
     setForgotOtp("");
     setNewPassword("");
     setConfirmPassword("");
@@ -307,7 +307,7 @@ export default function AdminLoginPortal() {
                 alt="Rotaract SLTC" 
                 width={180} 
                 height={65} 
-                className="h-10 w-auto mx-auto object-contain drop-shadow-[0_0_15px_rgba(230,0,126,0.4)]"
+                className="h-10 w-auto mx-auto object-contain"
                 priority
               />
             </div>
@@ -356,7 +356,7 @@ export default function AdminLoginPortal() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="waruna.jajjja@gmail.com"
+                    placeholder="rotaractsltc@gmail.com"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 focus:border-[#e6007e] focus:ring-1 focus:ring-[#e6007e] text-sm text-white placeholder-slate-500 outline-none transition-all font-mono"
                   />
                 </div>
@@ -445,13 +445,6 @@ export default function AdminLoginPortal() {
                   📧 {email}
                 </div>
               </div>
-
-              {/* Developer Test Helper */}
-              {devOtpHint && (
-                <div className="p-2.5 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs font-mono text-center">
-                  💡 Dev OTP Code: <strong className="text-white text-sm">{devOtpHint}</strong>
-                </div>
-              )}
 
               {/* 6-Digit OTP Input */}
               <div>
@@ -581,12 +574,7 @@ export default function AdminLoginPortal() {
                   </div>
                 )}
 
-                {/* Developer Hint in Modal */}
-                {forgotDevOtp && forgotStep === 2 && (
-                  <div className="mb-4 p-2.5 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs font-mono text-center">
-                    💡 Reset OTP Code: <strong className="text-white text-sm">{forgotDevOtp}</strong>
-                  </div>
-                )}
+
 
                 {/* ------------------------------------------------------------- */}
                 {/* STEP 1: ENTER ADMIN EMAIL                                      */}
@@ -614,7 +602,7 @@ export default function AdminLoginPortal() {
                           value={forgotEmail}
                           onChange={(e) => setForgotEmail(e.target.value)}
                           required
-                          placeholder="waruna.jajjja@gmail.com"
+                          placeholder="rotaractsltc@gmail.com"
                           className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 focus:border-[#e6007e] text-sm text-white font-mono outline-none"
                         />
                       </div>
