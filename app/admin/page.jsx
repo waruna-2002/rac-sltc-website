@@ -80,11 +80,21 @@ import {
   FileText,
   BookOpen,
   Newspaper,
-  Sparkles
+  Sparkles,
+  BellRing
 } from "lucide-react";
 
 function AdminDashboardInner() {
-  const { isAdmin, isSuperAdmin, isProjectEditor, isVerifying, adminRole, loginAdmin, logoutAdmin } = useAdmin();
+  const { 
+    isAdmin, 
+    isSuperAdmin, 
+    isProjectEditor, 
+    isVerifying, 
+    adminRole, 
+    isPanelUnlocked, 
+    loginAdmin, 
+    logoutAdmin 
+  } = useAdmin();
   const searchParams = useSearchParams();
   const tabQuery = searchParams ? searchParams.get("tab") : null;
   const [activeTab, setActiveTab] = useState(tabQuery || "overview");
@@ -235,18 +245,20 @@ function AdminDashboardInner() {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [isAddingEvent, setIsAddingEvent] = useState(false);
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
 
   // New Member Form State
   const [newMemberForm, setNewMemberForm] = useState({
     name: "",
     role: "Director",
     category: "Board of Directors",
+    avenue: "Community Service Avenue",
     faculty: "Faculty of Computing & IT",
-    image: "/images/team/placeholder.jpg",
+    image: "",
     bio: "",
     email: "",
-    linkedin: "https://linkedin.com",
-    instagram: "https://instagram.com",
+    linkedin: "",
+    instagram: "",
   });
 
   // New Project Form State
@@ -259,10 +271,7 @@ function AdminDashboardInner() {
     image: "",
     images: [],
     driveLink: "",
-    proposalPdf: "",
-    proposalPdfName: "",
-    reportPdf: "",
-    reportPdfName: "",
+    proposalDriveLink: "",
     projectChair: "",
     projectSecretary: "",
     projectTreasurer: "",
@@ -279,12 +288,12 @@ function AdminDashboardInner() {
     date: new Date().toISOString().split("T")[0],
     time: "09:00 AM - 01:00 PM",
     location: "SLTC Research University, Padukka",
-    image: "/images/hero.jpg",
-    registrationLink: "/join-us",
+    image: "",
+    registrationLink: "",
     registrationOpen: true,
     featured: true,
     status: "upcoming",
-    tags: "Leadership, Community, Rotaract",
+    tags: "",
   });
 
   // Load initial data
@@ -326,6 +335,16 @@ function AdminDashboardInner() {
       })
       .catch((err) => console.log("Admin events API fallback:", err));
 
+    // Fetch live team members from MongoDB API
+    fetch("/api/team")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setTeam(json.data);
+        }
+      })
+      .catch((err) => console.log("Admin team API fallback:", err));
+
     // Fetch live Cloudinary uploaded media assets
     fetch("/api/upload")
       .then((res) => res.json())
@@ -363,7 +382,7 @@ function AdminDashboardInner() {
   }, [isAdmin, isSuperAdmin]);
 
   useEffect(() => {
-    // If project_editor attempts to visit restricted tabs, redirect to approvals
+    // Restrict editor role to allowed tabs
     if (isProjectEditor && (activeTab === "team" || activeTab === "site" || activeTab === "stats" || activeTab === "members" || activeTab === "inbox")) {
       setActiveTab("approvals");
     }
@@ -583,6 +602,27 @@ function AdminDashboardInner() {
     } catch (err) {
       console.error("Reject event error:", err);
       showToast("Network error rejecting event", "error");
+    }
+  };
+
+  const handleDispatchReminders = async () => {
+    try {
+      setIsSendingReminders(true);
+      const res = await fetch("/api/notifications/send-reminders", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || "24h event reminders dispatched!", "success");
+      } else {
+        showToast(data.error || "Failed to dispatch reminders", "error");
+      }
+    } catch (err) {
+      console.error("Reminder dispatch error:", err);
+      showToast("Network error dispatching reminders", "error");
+    } finally {
+      setIsSendingReminders(false);
     }
   };
 
@@ -815,7 +855,7 @@ function AdminDashboardInner() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin || !isPanelUnlocked) {
     return <AdminLoginPortal />;
   }
 
@@ -864,381 +904,303 @@ function AdminDashboardInner() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold tracking-wider uppercase mb-2">
-            <ShieldCheck size={14} />
-            <span>Authenticated: {isSuperAdmin ? "Super Admin (Full Access)" : "Project Editor"}</span>
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400 text-[11px] font-medium tracking-wide mb-2">
+            <span>{isSuperAdmin ? "Super Admin" : "Project Editor"}</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Club Master Dashboard
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            Club Dashboard
           </h1>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <Link
             href="/"
-            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white transition-all flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5"
           >
-            <Globe size={14} className="text-[#e6007e]" />
-            <span>View Public Website</span>
+            <Globe size={13} className="text-[#e6007e]" />
+            <span>Public Site</span>
           </Link>
           <button
             onClick={logoutAdmin}
-            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-500/50 text-xs font-bold text-slate-300 hover:text-rose-300 cursor-pointer transition-all"
+            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-500/50 text-xs font-semibold text-slate-300 hover:text-rose-300 cursor-pointer transition-all"
           >
-            Logout ({isSuperAdmin ? "Master Admin" : "Editor"})
+            Logout
           </button>
         </div>
       </div>
 
-      {/* Executive Quick Stats Summary Bar */}
+      {/* Quick Stats Summary Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {/* Approvals */}
         <div 
           onClick={() => setActiveTab("approvals")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer group hover:scale-[1.02] ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             activeTab === "approvals" 
-              ? "bg-[#e6007e]/15 border-[#e6007e] shadow-lg shadow-[#e6007e]/15" 
+              ? "bg-[#e6007e]/15 border-[#e6007e]" 
               : "bg-[#0c1017] border-slate-800 hover:border-slate-700"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">
             <span className="uppercase tracking-wider">Approvals</span>
-            <Clock size={16} className={pendingCount > 0 ? "text-[#e6007e] animate-pulse" : "text-slate-500"} />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">{pendingCount}</span>
             {pendingCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-[#e6007e] text-white text-[10px] font-black uppercase tracking-wider">
-                Action
+              <span className="px-2 py-0.5 rounded-full bg-[#e6007e] text-white text-[10px] font-bold">
+                {pendingCount}
               </span>
             )}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Pending review</span>
+          <div className="text-2xl font-black text-white">{pendingCount}</div>
+          <span className="text-[11px] text-slate-500 mt-1 block">Pending review</span>
         </div>
 
         {/* Projects */}
         <div 
           onClick={() => setActiveTab("projects")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer group hover:scale-[1.02] ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             activeTab === "projects" 
-              ? "bg-[#e6007e]/15 border-[#e6007e] shadow-lg shadow-[#e6007e]/15" 
+              ? "bg-[#e6007e]/15 border-[#e6007e]" 
               : "bg-[#0c1017] border-slate-800 hover:border-slate-700"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">
             <span className="uppercase tracking-wider">Projects</span>
-            <FolderKanban size={16} className="text-cyan-400" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">{projects.length}</span>
             <span className="text-[10px] text-emerald-400 font-bold uppercase">
               {projects.filter(p => p.status === "approved").length} Live
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Total catalog</span>
+          <div className="text-2xl font-black text-white">{projects.length}</div>
+          <span className="text-[11px] text-slate-500 mt-1 block">Total catalog</span>
         </div>
 
         {/* Events */}
         <div 
           onClick={() => setActiveTab("events")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer group hover:scale-[1.02] ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             activeTab === "events" 
-              ? "bg-[#e6007e]/15 border-[#e6007e] shadow-lg shadow-[#e6007e]/15" 
+              ? "bg-[#e6007e]/15 border-[#e6007e]" 
               : "bg-[#0c1017] border-slate-800 hover:border-slate-700"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">
             <span className="uppercase tracking-wider">Events</span>
-            <Calendar size={16} className="text-amber-400" />
+            <span className="text-[10px] text-slate-400">Calendar</span>
           </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">{events.length}</span>
-            <span className="text-[10px] text-slate-400 font-medium">Calendar</span>
-          </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Active entries</span>
+          <div className="text-2xl font-black text-white">{events.length}</div>
+          <span className="text-[11px] text-slate-500 mt-1 block">Active entries</span>
         </div>
 
         {/* Applicants */}
         <div 
           onClick={() => setActiveTab("members")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer group hover:scale-[1.02] ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             activeTab === "members" 
-              ? "bg-[#e6007e]/15 border-[#e6007e] shadow-lg shadow-[#e6007e]/15" 
+              ? "bg-[#e6007e]/15 border-[#e6007e]" 
               : "bg-[#0c1017] border-slate-800 hover:border-slate-700"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">
             <span className="uppercase tracking-wider">Applicants</span>
-            <UserCheck size={16} className="text-purple-400" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">{memberApplicants.length}</span>
             {pendingMembersCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-black uppercase">
+              <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold">
                 {pendingMembersCount} New
               </span>
             )}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Registrations</span>
+          <div className="text-2xl font-black text-white">{memberApplicants.length}</div>
+          <span className="text-[11px] text-slate-500 mt-1 block">Registrations</span>
         </div>
 
         {/* Inbox */}
         <div 
           onClick={() => setActiveTab("inbox")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer group hover:scale-[1.02] ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             activeTab === "inbox" 
-              ? "bg-[#e6007e]/15 border-[#e6007e] shadow-lg shadow-[#e6007e]/15" 
+              ? "bg-[#e6007e]/15 border-[#e6007e]" 
               : "bg-[#0c1017] border-slate-800 hover:border-slate-700"
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-2">
             <span className="uppercase tracking-wider">Messages</span>
-            <Mail size={16} className="text-emerald-400" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">{contactMessages.length}</span>
             {unreadMessagesCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] font-black uppercase animate-pulse">
+              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold">
                 {unreadMessagesCount} Unread
               </span>
             )}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Inquiries</span>
+          <div className="text-2xl font-black text-white">{contactMessages.length}</div>
+          <span className="text-[11px] text-slate-500 mt-1 block">Inquiries</span>
         </div>
       </div>
 
       {/* Main Admin Tab Navigation Bar */}
-      <div className="flex flex-wrap gap-2.5 p-2 rounded-2xl bg-[#0c1017] border border-slate-800">
+      <div className="flex flex-wrap gap-2 p-1.5 rounded-2xl bg-[#0c1017] border border-slate-800">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
             activeTab === "overview"
-              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+              ? "bg-[#e6007e] text-white"
               : "text-slate-400 hover:text-white hover:bg-slate-900"
           }`}
         >
-          <BarChart3 size={16} />
-          <span>Overview</span>
+          Overview
         </button>
 
         <button
           onClick={() => setActiveTab("approvals")}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === "approvals"
-              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+              ? "bg-[#e6007e] text-white"
               : "text-slate-400 hover:text-white hover:bg-slate-900"
           }`}
         >
-          <Clock size={16} />
-          <span>Approvals ({pendingCount})</span>
+          <span>Approvals</span>
+          {pendingCount > 0 && (
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeTab === "approvals" ? "bg-white text-[#e6007e]" : "bg-[#e6007e] text-white"
+            }`}>
+              {pendingCount}
+            </span>
+          )}
         </button>
 
         <button
           onClick={() => setActiveTab("projects")}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === "projects"
-              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+              ? "bg-[#e6007e] text-white"
               : "text-slate-400 hover:text-white hover:bg-slate-900"
           }`}
         >
-          <FolderKanban size={16} />
-          <span>Projects ({projects.length})</span>
+          <span>Projects</span>
+          <span className="text-[10px] text-slate-500 font-mono">({projects.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("events")}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-2 ${
             activeTab === "events"
-              ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+              ? "bg-[#e6007e] text-white"
               : "text-slate-400 hover:text-white hover:bg-slate-900"
           }`}
         >
-          <Calendar size={16} />
-          <span>Events ({events.length})</span>
+          <span>Events</span>
+          <span className="text-[10px] text-slate-500 font-mono">({events.length})</span>
         </button>
 
         {isSuperAdmin && (
           <>
             <button
               onClick={() => setActiveTab("members")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === "members"
-                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  ? "bg-[#e6007e] text-white"
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <UserCheck size={16} />
-              <span>Applicants ({memberApplicants.length})</span>
+              <span>Applicants</span>
               {pendingMembersCount > 0 && (
-                <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  activeTab === "members" ? "bg-white text-purple-700" : "bg-purple-600 text-white"
+                }`}>
+                  {pendingMembersCount}
+                </span>
               )}
             </button>
 
             <button
               onClick={() => setActiveTab("inbox")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === "inbox"
-                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  ? "bg-[#e6007e] text-white"
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Mail size={16} />
-              <span>Inbox ({contactMessages.length})</span>
+              <span>Inbox</span>
               {unreadMessagesCount > 0 && (
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  activeTab === "inbox" ? "bg-white text-cyan-700" : "bg-cyan-600 text-white"
+                }`}>
+                  {unreadMessagesCount}
+                </span>
               )}
             </button>
 
             <button
               onClick={() => setActiveTab("team")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === "team"
-                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  ? "bg-[#e6007e] text-white"
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Users size={16} />
-              <span>Team ({team.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("site")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === "site"
-                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
-                  : "text-slate-400 hover:text-white hover:bg-slate-900"
-              }`}
-            >
-              <Globe size={16} />
-              <span>Visual Site Studio</span>
+              <span>Team</span>
+              <span className="text-[10px] text-slate-500 font-mono">({team.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("media")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === "media"
-                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  ? "bg-[#e6007e] text-white"
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Newspaper size={16} />
-              <span>Media CMS ({mediaItems.length})</span>
+              <span>Media CMS</span>
+              <span className="text-[10px] text-slate-500 font-mono">({mediaItems.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("site")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                activeTab === "site"
+                  ? "bg-[#e6007e] text-white"
+                  : "text-slate-400 hover:text-white hover:bg-slate-900"
+              }`}
+            >
+              Site Studio
             </button>
 
             <button
               onClick={() => setActiveTab("stats")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                 activeTab === "stats"
-                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  ? "bg-[#e6007e] text-white"
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <BarChart3 size={16} />
-              <span>Stats</span>
+              Stats
             </button>
           </>
         )}
       </div>
 
-      {/* TAB 0: MASTER CLUB OVERVIEW */}
+      {/* TAB 0: OVERVIEW */}
       {activeTab === "overview" && (
-        <div className="space-y-8">
-          {/* Welcome & Command Status Hero */}
-          <div className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#160613] via-[#0c1017] to-[#07090e] border border-[#e6007e]/30 shadow-2xl">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_center,_rgba(230,0,126,0.18)_0%,_transparent_70%)] pointer-events-none" />
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/15 border border-[#e6007e]/40 text-[#ff66ab] text-xs font-bold uppercase tracking-wider">
-                  <ShieldCheck size={14} />
-                  <span>Club Master Command Center</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white">
-                  Welcome to Rotaract SLTC Master Dashboard
-                </h2>
-                <p className="text-slate-400 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                  Oversee all frontline operations, review pending submissions, manage 8 avenues of service, 
-                  track club membership growth, and update dynamic media across the SLTC website in realtime.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap sm:flex-nowrap gap-2 shrink-0">
-                <button
-                  onClick={() => setActiveTab("approvals")}
-                  className="px-4 py-2.5 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-[#e6007e]/30 cursor-pointer"
-                >
-                  <Clock size={15} />
-                  <span>Review Approvals ({pendingCount})</span>
-                </button>
-                <button
-                  onClick={() => { setActiveTab("projects"); setIsAddingProject(true); }}
-                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  <PlusCircle size={15} />
-                  <span>Add Project</span>
-                </button>
-              </div>
+        <div className="space-y-6">
+          {/* Dashboard Summary Card */}
+          <div className="p-6 sm:p-7 rounded-2xl bg-[#0c1017] border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                Rotaract Club of SLTC Admin
+              </span>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                Dashboard Overview
+              </h2>
+              <p className="text-slate-400 text-xs mt-1 max-w-xl">
+                Manage club projects, upcoming events, membership applications, and website content.
+              </p>
             </div>
-          </div>
-
-          {/* Quick Action Matrix */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-              <FolderKanban size={16} className="text-[#e6007e]" />
-              <span>Quick Operational Shortcuts</span>
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="flex items-center gap-2.5 shrink-0">
               <button
                 onClick={() => setActiveTab("approvals")}
-                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-[#e6007e] text-left transition-all group hover:scale-[1.02] cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
-                <Clock size={20} className="text-[#e6007e] mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-white block">Approvals</span>
-                <span className="text-[10px] text-slate-400">{pendingCount} awaiting</span>
+                Review Approvals ({pendingCount})
               </button>
-
-              <button
-                onClick={() => setActiveTab("members")}
-                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-purple-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
-              >
-                <Users size={20} className="text-purple-400 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-white block">Applicants</span>
-                <span className="text-[10px] text-slate-400">{memberApplicants.length} registered</span>
-              </button>
-
               <button
                 onClick={() => { setActiveTab("projects"); setIsAddingProject(true); }}
-                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-cyan-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-700 text-xs font-semibold tracking-wide transition-all cursor-pointer"
               >
-                <PlusCircle size={20} className="text-cyan-400 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-white block">New Project</span>
-                <span className="text-[10px] text-slate-400">Publish service</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab("events"); setIsAddingEvent(true); }}
-                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-amber-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
-              >
-                <Calendar size={20} className="text-amber-400 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-white block">New Event</span>
-                <span className="text-[10px] text-slate-400">Schedule flyer</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("media")}
-                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-pink-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
-              >
-                <Newspaper size={20} className="text-pink-400 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-white block">Media CMS</span>
-                <span className="text-[10px] text-slate-400">{mediaItems.length} publications</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("site")}
-                className="p-4 rounded-2xl bg-[#0c1017] border border-slate-800 hover:border-emerald-500 text-left transition-all group hover:scale-[1.02] cursor-pointer"
-              >
-                <Sparkles size={20} className="text-emerald-400 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-white block">Visual Studio</span>
-                <span className="text-[10px] text-slate-400">Live Page Editor</span>
+                Add Project
               </button>
             </div>
           </div>
@@ -1439,43 +1401,17 @@ function AdminDashboardInner() {
                           </div>
                         )}
 
-                        {(project.proposalPdf || project.reportPdf) && (
-                          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-700/80 space-y-1.5 mt-2.5">
-                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
-                              📄 Project Documents (PDF):
-                            </span>
-                            <div className="flex flex-col gap-1.5">
-                              {project.proposalPdf && (
-                                <a
-                                  href={project.proposalPdf}
-                                  target="_blank"
-                                  download={project.proposalPdfName || `${project.title}_Proposal.pdf`}
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#0c1017] hover:bg-[#e6007e]/20 border border-slate-700 hover:border-[#e6007e] text-xs font-semibold text-white transition-colors"
-                                >
-                                  <span className="flex items-center gap-1.5 truncate">
-                                    <span className="text-[#e6007e]">📥</span>
-                                    <span className="truncate">Proposal: {project.proposalPdfName || "Proposal.pdf"}</span>
-                                  </span>
-                                  <span className="text-[10px] text-[#e6007e] font-bold shrink-0 ml-2">Download</span>
-                                </a>
-                              )}
-                              {project.reportPdf && (
-                                <a
-                                  href={project.reportPdf}
-                                  target="_blank"
-                                  download={project.reportPdfName || `${project.title}_Report.pdf`}
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#0c1017] hover:bg-[#e6007e]/20 border border-slate-700 hover:border-[#e6007e] text-xs font-semibold text-white transition-colors"
-                                >
-                                  <span className="flex items-center gap-1.5 truncate">
-                                    <span className="text-cyan-400">📥</span>
-                                    <span className="truncate">Report: {project.reportPdfName || "Report.pdf"}</span>
-                                  </span>
-                                  <span className="text-[10px] text-cyan-400 font-bold shrink-0 ml-2">Download</span>
-                                </a>
-                              )}
-                            </div>
+                        {(project.proposalDriveLink || project.reportDriveLink || project.proposalPdf || project.reportPdf) && (
+                          <div className="pt-2 mt-2 border-t border-slate-800">
+                            <a
+                              href={project.proposalDriveLink || project.reportDriveLink || project.proposalPdf || project.reportPdf}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 hover:text-white transition-colors"
+                            >
+                              <span>View Proposal &amp; Report</span>
+                              <ExternalLink size={12} className="text-[#e6007e]" />
+                            </a>
                           </div>
                         )}
                       </div>
@@ -1549,12 +1485,19 @@ function AdminDashboardInner() {
                   >
                     <div className="space-y-3">
                       <div className="relative h-44 rounded-xl overflow-hidden bg-slate-900">
-                        <Image
-                          src={ev.image || "/images/hero.jpg"}
-                          alt={ev.title}
-                          fill
-                          className="object-cover"
-                        />
+                        {ev.image ? (
+                          <Image
+                            src={ev.image}
+                            alt={ev.title}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 bg-slate-950/60 p-4 text-center">
+                            <Calendar size={28} className="text-slate-700 mb-1" />
+                            <span className="text-xs text-slate-500">No event banner</span>
+                          </div>
+                        )}
                         <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase">
                           Pending Event
                         </span>
@@ -1718,32 +1661,17 @@ function AdminDashboardInner() {
                     {project.description}
                   </p>
 
-                  {(project.proposalPdf || project.reportPdf) && (
-                    <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-800/60">
-                      {project.proposalPdf && (
-                        <a
-                          href={project.proposalPdf}
-                          target="_blank"
-                          download={project.proposalPdfName || "Proposal.pdf"}
-                          rel="noopener noreferrer"
-                          className="text-[10px] text-[#e6007e] hover:underline font-bold flex items-center gap-1"
-                          title="Download Project Proposal"
-                        >
-                          📄 Proposal PDF ↗
-                        </a>
-                      )}
-                      {project.reportPdf && (
-                        <a
-                          href={project.reportPdf}
-                          target="_blank"
-                          download={project.reportPdfName || "Report.pdf"}
-                          rel="noopener noreferrer"
-                          className="text-[10px] text-cyan-400 hover:underline font-bold flex items-center gap-1"
-                          title="Download Project Report"
-                        >
-                          📊 Report PDF ↗
-                        </a>
-                      )}
+                  {(project.proposalDriveLink || project.reportDriveLink || project.proposalPdf || project.reportPdf) && (
+                    <div className="pt-2 mt-2 border-t border-slate-800/60">
+                      <a
+                        href={project.proposalDriveLink || project.reportDriveLink || project.proposalPdf || project.reportPdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[#e6007e] hover:underline font-semibold inline-flex items-center gap-1"
+                      >
+                        <span>Proposal &amp; Report Link</span>
+                        <ExternalLink size={12} />
+                      </a>
                     </div>
                   )}
                 </div>
@@ -1798,13 +1726,25 @@ function AdminDashboardInner() {
             </div>
 
             {isSuperAdmin && (
-              <Button
-                onClick={() => setIsAddingEvent(true)}
-                className="py-2.5 text-xs font-bold uppercase tracking-wider"
-              >
-                <PlusCircle size={16} />
-                <span>Create New Event</span>
-              </Button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={isSendingReminders}
+                  onClick={handleDispatchReminders}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400 text-xs font-bold uppercase tracking-wider text-slate-200 transition-all inline-flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                  title="Dispatch automated push and email reminders for events happening in the next 24-48 hours"
+                >
+                  <BellRing size={15} className="text-cyan-400" />
+                  <span>{isSendingReminders ? "Dispatching..." : "Send 24h Reminders"}</span>
+                </button>
+                <Button
+                  onClick={() => setIsAddingEvent(true)}
+                  className="py-2.5 text-xs font-bold uppercase tracking-wider"
+                >
+                  <PlusCircle size={16} />
+                  <span>Create New Event</span>
+                </Button>
+              </div>
             )}
           </div>
 
@@ -1816,12 +1756,19 @@ function AdminDashboardInner() {
               >
                 <div>
                   <div className="relative h-40 rounded-xl overflow-hidden bg-slate-900 mb-3">
-                    <Image
-                      src={ev.image || "/images/hero.jpg"}
-                      alt={ev.title}
-                      fill
-                      className="object-cover"
-                    />
+                    {ev.image ? (
+                      <Image
+                        src={ev.image}
+                        alt={ev.title}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 bg-slate-950/60 p-4 text-center">
+                        <Calendar size={26} className="text-slate-700 mb-1" />
+                        <span className="text-[11px] text-slate-500">No event banner</span>
+                      </div>
+                    )}
                     <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-[#e6007e] text-white text-[10px] font-bold uppercase tracking-wider">
                       {ev.avenue}
                     </span>
@@ -2419,97 +2366,14 @@ function AdminDashboardInner() {
               />
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
-              <label className="text-xs font-bold uppercase text-slate-300 block">
-                Project Documents (PDF)
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {/* Proposal PDF */}
-                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">1. Proposal PDF</span>
-                  {editingProject.proposalPdf ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <a
-                        href={editingProject.proposalPdf}
-                        target="_blank"
-                        download={editingProject.proposalPdfName || "Proposal.pdf"}
-                        rel="noopener noreferrer"
-                        className="text-xs text-[#e6007e] hover:underline font-semibold truncate"
-                      >
-                        📥 {editingProject.proposalPdfName || "Download Proposal"}
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => setEditingProject({ ...editingProject, proposalPdf: "", proposalPdfName: "" })}
-                        className="text-rose-400 text-[10px] hover:underline shrink-0"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="application/pdf,.pdf"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        fd.append("docType", "proposal");
-                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
-                        const json = await res.json();
-                        if (json.success && json.url) {
-                          setEditingProject({ ...editingProject, proposalPdf: json.url, proposalPdfName: json.fileName || file.name });
-                        }
-                      }}
-                      className="text-xs text-slate-400 block"
-                    />
-                  )}
-                </div>
-
-                {/* Report PDF */}
-                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">2. Report PDF</span>
-                  {editingProject.reportPdf ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <a
-                        href={editingProject.reportPdf}
-                        target="_blank"
-                        download={editingProject.reportPdfName || "Report.pdf"}
-                        rel="noopener noreferrer"
-                        className="text-xs text-cyan-400 hover:underline font-semibold truncate"
-                      >
-                        📥 {editingProject.reportPdfName || "Download Report"}
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => setEditingProject({ ...editingProject, reportPdf: "", reportPdfName: "" })}
-                        className="text-rose-400 text-[10px] hover:underline shrink-0"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="application/pdf,.pdf"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        fd.append("docType", "report");
-                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
-                        const json = await res.json();
-                        if (json.success && json.url) {
-                          setEditingProject({ ...editingProject, reportPdf: json.url, reportPdfName: json.fileName || file.name });
-                        }
-                      }}
-                      className="text-xs text-slate-400 block"
-                    />
-                  )}
-                </div>
-              </div>
+            <div>
+              <Input
+                label="Project Proposal & Report Google Drive Link"
+                type="url"
+                placeholder="https://drive.google.com/drive/folders/... or document link"
+                value={editingProject.proposalDriveLink || editingProject.reportDriveLink || ""}
+                onChange={(e) => setEditingProject({ ...editingProject, proposalDriveLink: e.target.value, reportDriveLink: e.target.value })}
+              />
             </div>
 
             <div>
@@ -2635,81 +2499,14 @@ function AdminDashboardInner() {
               onChange={(e) => setNewProjectForm({ ...newProjectForm, driveLink: e.target.value })}
             />
 
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
-              <label className="text-xs font-bold uppercase text-slate-300 block">
-                Project Documents (PDF)
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {/* Proposal PDF */}
-                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">1. Proposal PDF</span>
-                  {newProjectForm.proposalPdf ? (
-                    <div className="flex items-center justify-between text-[#e6007e]">
-                      <span className="truncate text-xs">✓ {newProjectForm.proposalPdfName || "Proposal Attached"}</span>
-                      <button
-                        type="button"
-                        onClick={() => setNewProjectForm({ ...newProjectForm, proposalPdf: "", proposalPdfName: "" })}
-                        className="text-rose-400 text-[10px] hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="application/pdf,.pdf"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        fd.append("docType", "proposal");
-                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
-                        const json = await res.json();
-                        if (json.success && json.url) {
-                          setNewProjectForm({ ...newProjectForm, proposalPdf: json.url, proposalPdfName: json.fileName || file.name });
-                        }
-                      }}
-                      className="text-xs text-slate-400 block"
-                    />
-                  )}
-                </div>
-
-                {/* Report PDF */}
-                <div className="p-3 rounded-lg bg-[#0c1017] border border-slate-800 space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">2. Report PDF</span>
-                  {newProjectForm.reportPdf ? (
-                    <div className="flex items-center justify-between text-cyan-400">
-                      <span className="truncate text-xs">✓ {newProjectForm.reportPdfName || "Report Attached"}</span>
-                      <button
-                        type="button"
-                        onClick={() => setNewProjectForm({ ...newProjectForm, reportPdf: "", reportPdfName: "" })}
-                        className="text-rose-400 text-[10px] hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="application/pdf,.pdf"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        fd.append("docType", "report");
-                        const res = await fetch("/api/upload/project-doc", { method: "POST", body: fd });
-                        const json = await res.json();
-                        if (json.success && json.url) {
-                          setNewProjectForm({ ...newProjectForm, reportPdf: json.url, reportPdfName: json.fileName || file.name });
-                        }
-                      }}
-                      className="text-xs text-slate-400 block"
-                    />
-                  )}
-                </div>
-              </div>
+            <div>
+              <Input
+                label="Project Proposal & Report Google Drive Link"
+                type="url"
+                placeholder="https://drive.google.com/drive/folders/... or document link"
+                value={newProjectForm.proposalDriveLink || newProjectForm.reportDriveLink || ""}
+                onChange={(e) => setNewProjectForm({ ...newProjectForm, proposalDriveLink: e.target.value, reportDriveLink: e.target.value })}
+              />
             </div>
 
             <Input label="Summary Description" value={newProjectForm.description} onChange={(e) => setNewProjectForm({ ...newProjectForm, description: e.target.value })} required />
@@ -2786,13 +2583,29 @@ function AdminDashboardInner() {
             <Input label="Tags (comma separated)" value={newEventForm.tags} onChange={(e) => setNewEventForm({ ...newEventForm, tags: e.target.value })} />
 
             <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Upload Event Banner Image</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleAdminFileUpload(e, (url) => setNewEventForm({ ...newEventForm, image: url }))}
-                className="text-xs text-slate-400 mb-2 block"
-              />
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Event Banner Image</label>
+              {newEventForm.image ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 mb-2">
+                  <div className="w-16 h-10 rounded-lg overflow-hidden relative shrink-0 border border-slate-700">
+                    <Image src={newEventForm.image} alt="Banner preview" fill className="object-cover" unoptimized />
+                  </div>
+                  <div className="flex-1 truncate text-xs text-slate-300">Banner attached</div>
+                  <button
+                    type="button"
+                    onClick={() => setNewEventForm({ ...newEventForm, image: "" })}
+                    className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg text-xs font-bold cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleAdminFileUpload(e, (url) => setNewEventForm({ ...newEventForm, image: url }))}
+                  className="text-xs text-slate-400 mb-2 block"
+                />
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
@@ -2904,13 +2717,29 @@ function AdminDashboardInner() {
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Update Banner Photo</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleAdminFileUpload(e, (url) => setEditingEvent({ ...editingEvent, image: url }))}
-                className="text-xs text-slate-400 mb-2 block"
-              />
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Event Banner Image</label>
+              {editingEvent.image ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 mb-2">
+                  <div className="w-16 h-10 rounded-lg overflow-hidden relative shrink-0 border border-slate-700">
+                    <Image src={editingEvent.image} alt="Banner preview" fill className="object-cover" unoptimized />
+                  </div>
+                  <div className="flex-1 truncate text-xs text-slate-300">Banner attached</div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingEvent({ ...editingEvent, image: "" })}
+                    className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg text-xs font-bold cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleAdminFileUpload(e, (url) => setEditingEvent({ ...editingEvent, image: url }))}
+                  className="text-xs text-slate-400 mb-2 block"
+                />
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
@@ -2927,15 +2756,81 @@ function AdminDashboardInner() {
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEditingMember(null)} />
           <form
             onSubmit={handleSaveMemberEdit}
-            className="relative w-full max-w-xl p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl my-8"
+            className="relative w-full max-w-xl p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl my-8 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-xl font-bold text-white">Edit Team Member</h3>
-            <Input label="Name" value={editingMember.name} onChange={(e) => setEditingMember({ ...editingMember, name: e.target.value })} required />
-            <Input label="Role" value={editingMember.role} onChange={(e) => setEditingMember({ ...editingMember, role: e.target.value })} required />
-            <Input label="Faculty" value={editingMember.faculty} onChange={(e) => setEditingMember({ ...editingMember, faculty: e.target.value })} required />
+            <Input label="Name *" value={editingMember.name || ""} onChange={(e) => setEditingMember({ ...editingMember, name: e.target.value })} required />
             
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Role *" value={editingMember.role || ""} onChange={(e) => setEditingMember({ ...editingMember, role: e.target.value })} required />
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Category *</label>
+                <select
+                  value={editingMember.category || "Board of Directors"}
+                  onChange={(e) => setEditingMember({ ...editingMember, category: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="Executive Committee">Executive Committee</option>
+                  <option value="Board of Directors">Board of Directors</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
+                <select
+                  value={editingMember.avenue || "Community Service Avenue"}
+                  onChange={(e) => setEditingMember({ ...editingMember, avenue: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="Executive / General">Executive / General</option>
+                  <option value="Community Service Avenue">Community Service Avenue</option>
+                  <option value="Club Service Avenue">Club Service Avenue</option>
+                  <option value="Professional Development Avenue">Professional Development Avenue</option>
+                  <option value="Membership Development Avenue">Membership Development Avenue</option>
+                  <option value="International Service Avenue">International Service Avenue</option>
+                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
+                </select>
+              </div>
+              <Input label="Faculty" value={editingMember.faculty || ""} onChange={(e) => setEditingMember({ ...editingMember, faculty: e.target.value })} placeholder="e.g. Faculty of Computing & IT" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="LinkedIn Profile URL (Optional)"
+                placeholder="https://linkedin.com/in/username"
+                value={editingMember.linkedin || ""}
+                onChange={(e) => setEditingMember({ ...editingMember, linkedin: e.target.value })}
+              />
+              <Input
+                label="Email Address (Optional)"
+                type="email"
+                placeholder="member@sltc.ac.lk"
+                value={editingMember.email || ""}
+                onChange={(e) => setEditingMember({ ...editingMember, email: e.target.value })}
+              />
+            </div>
+
             <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Direct Photo File Upload</label>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Photo Upload</label>
+              {editingMember.image && (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 mb-2">
+                  <div className="w-12 h-12 rounded-full overflow-hidden relative shrink-0 border border-slate-700">
+                    <Image src={editingMember.image} alt="Member preview" fill className="object-cover" unoptimized />
+                  </div>
+                  <div className="flex-1 truncate text-xs text-slate-300">Photo attached</div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingMember({ ...editingMember, image: "" })}
+                    className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg text-xs font-bold cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
               <input
                 type="file"
                 accept="image/*"
@@ -2948,6 +2843,7 @@ function AdminDashboardInner() {
               <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Bio / Profile Summary</label>
               <textarea
                 rows={3}
+                placeholder="Short leadership bio or summary..."
                 value={editingMember.bio || ""}
                 onChange={(e) => setEditingMember({ ...editingMember, bio: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
@@ -2968,20 +2864,97 @@ function AdminDashboardInner() {
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsAddingMember(false)} />
           <form
             onSubmit={handleAddMemberSubmit}
-            className="relative w-full max-w-xl p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl my-8"
+            className="relative w-full max-w-xl p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl my-8 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-xl font-bold text-white">Add New Team Member</h3>
-            <Input label="Name" value={newMemberForm.name} onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })} required />
-            <Input label="Role" value={newMemberForm.role} onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value })} required />
-            <Input label="Faculty" value={newMemberForm.faculty} onChange={(e) => setNewMemberForm({ ...newMemberForm, faculty: e.target.value })} required />
+            <Input label="Name *" value={newMemberForm.name} onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })} required />
             
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Role *" value={newMemberForm.role} onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value })} required />
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Category *</label>
+                <select
+                  value={newMemberForm.category}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, category: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="Executive Committee">Executive Committee</option>
+                  <option value="Board of Directors">Board of Directors</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
+                <select
+                  value={newMemberForm.avenue}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, avenue: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="Executive / General">Executive / General</option>
+                  <option value="Community Service Avenue">Community Service Avenue</option>
+                  <option value="Club Service Avenue">Club Service Avenue</option>
+                  <option value="Professional Development Avenue">Professional Development Avenue</option>
+                  <option value="Membership Development Avenue">Membership Development Avenue</option>
+                  <option value="International Service Avenue">International Service Avenue</option>
+                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
+                </select>
+              </div>
+              <Input label="Faculty" value={newMemberForm.faculty} onChange={(e) => setNewMemberForm({ ...newMemberForm, faculty: e.target.value })} placeholder="e.g. Faculty of Computing & IT" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="LinkedIn Profile URL (Optional)"
+                placeholder="https://linkedin.com/in/username"
+                value={newMemberForm.linkedin || ""}
+                onChange={(e) => setNewMemberForm({ ...newMemberForm, linkedin: e.target.value })}
+              />
+              <Input
+                label="Email Address (Optional)"
+                type="email"
+                placeholder="member@sltc.ac.lk"
+                value={newMemberForm.email || ""}
+                onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
+              />
+            </div>
+
             <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Direct Photo File Upload</label>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Photo Upload</label>
+              {newMemberForm.image && (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 mb-2">
+                  <div className="w-12 h-12 rounded-full overflow-hidden relative shrink-0 border border-slate-700">
+                    <Image src={newMemberForm.image} alt="Member preview" fill className="object-cover" unoptimized />
+                  </div>
+                  <div className="flex-1 truncate text-xs text-slate-300">Photo attached</div>
+                  <button
+                    type="button"
+                    onClick={() => setNewMemberForm({ ...newMemberForm, image: "" })}
+                    className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg text-xs font-bold cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => handleAdminFileUpload(e, (url) => setNewMemberForm({ ...newMemberForm, image: url }))}
                 className="text-xs text-slate-400 mb-2 block"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Bio / Profile Summary</label>
+              <textarea
+                rows={3}
+                placeholder="Short leadership bio or summary..."
+                value={newMemberForm.bio || ""}
+                onChange={(e) => setNewMemberForm({ ...newMemberForm, bio: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
               />
             </div>
 

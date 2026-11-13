@@ -3,15 +3,34 @@
 import React, { useState, useEffect } from "react";
 import PersonCard from "@/components/PersonCard";
 import MemberModal from "@/components/MemberModal";
-import { getStoredTeam } from "@/lib/teamStore";
+import { getStoredTeam, syncTeamFromDatabase } from "@/lib/teamStore";
 import { motion } from "framer-motion";
+import { Users } from "lucide-react";
+
 export default function OurPeoplePage() {
   const [filter, setFilter] = useState("All");
   const [selectedMember, setSelectedMember] = useState(null);
   const [teamList, setTeamList] = useState([]);
 
   useEffect(() => {
+    // 1. Instant render from local cache
     setTeamList(getStoredTeam());
+
+    // 2. Asynchronously sync live from MongoDB Atlas cloud database
+    syncTeamFromDatabase().then((cloudList) => {
+      if (cloudList && Array.isArray(cloudList)) {
+        setTeamList(cloudList);
+      }
+    });
+
+    // 3. React to live team updates
+    const handleTeamUpdate = (e) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setTeamList(e.detail);
+      }
+    };
+    window.addEventListener("rotaract_team_updated", handleTeamUpdate);
+    return () => window.removeEventListener("rotaract_team_updated", handleTeamUpdate);
   }, []);
 
   const categories = ["All", "Executive Committee", "Board of Directors"];
@@ -77,17 +96,29 @@ export default function OurPeoplePage() {
           {filter === "All" ? "ALL TEAM MEMBERS" : filter.toUpperCase()}
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredTeam
-            .filter(m => (filter === "All" || filter === "Executive Committee") && president ? m.id !== president.id : true)
-            .map((member) => (
-              <PersonCard
-                key={member.id}
-                {...member}
-                onClick={() => setSelectedMember(member)}
-              />
-            ))}
-        </div>
+        {filteredTeam.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredTeam
+              .filter(m => (filter === "All" || filter === "Executive Committee") && president ? m.id !== president.id : true)
+              .map((member) => (
+                <PersonCard
+                  key={member.id}
+                  {...member}
+                  onClick={() => setSelectedMember(member)}
+                />
+              ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 px-6 rounded-3xl bg-[#0c1017]/60 border border-slate-800 max-w-xl mx-auto space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#e6007e]/10 text-[#ff4d94] flex items-center justify-center mx-auto border border-[#e6007e]/30">
+              <Users size={24} />
+            </div>
+            <h4 className="text-base font-bold text-white">Leadership Directory Updating</h4>
+            <p className="text-xs text-slate-400 font-light leading-relaxed">
+              Official Executive Committee and Board of Directors details for the Rotary Year 2025-26 are currently being prepared. Check back shortly!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Member Details Modal Drawer */}

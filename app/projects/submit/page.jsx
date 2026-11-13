@@ -17,20 +17,17 @@ import {
   Edit3, 
   ArrowLeft, 
   Trash2, 
-  AlertCircle, 
-  Loader2 
+  AlertCircle 
 } from "lucide-react";
 
 export default function SubmitProjectPage() {
-  const [activeTab, setActiveTab] = useState("submit"); // "submit" | "my-submissions"
+  const [activeTab, setActiveTab] = useState("submit");
   const [submitted, setSubmitted] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [myEmail, setMyEmail] = useState("");
   const [projectsList, setProjectsList] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  const [isUploadingProposal, setIsUploadingProposal] = useState(false);
-  const [isUploadingReport, setIsUploadingReport] = useState(false);
 
   const initialFormState = {
     title: "",
@@ -41,10 +38,7 @@ export default function SubmitProjectPage() {
     image: "",
     images: [],
     driveLink: "",
-    proposalPdf: "",
-    proposalPdfName: "",
-    reportPdf: "",
-    reportPdfName: "",
+    proposalDriveLink: "",
     projectChair: "",
     projectSecretary: "",
     projectTreasurer: "",
@@ -117,104 +111,7 @@ export default function SubmitProjectPage() {
     });
   };
 
-  // Upload Project Proposal or Project Report PDF (Admin only access)
-  const handlePdfUpload = async (e, docType) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      setFormError("Only PDF documents (.pdf) are allowed for Project Proposals and Reports.");
-      return;
-    }
-
-    if (file.size > 25 * 1024 * 1024) {
-      setFormError("PDF file size must not exceed 25 MB.");
-      return;
-    }
-
-    setFormError("");
-    if (docType === "proposal") setIsUploadingProposal(true);
-    else setIsUploadingReport(true);
-
-    try {
-      const uploadData = new FormData();
-      uploadData.append("file", file);
-      uploadData.append("docType", docType);
-
-      const res = await fetch("/api/upload/project-doc", {
-        method: "POST",
-        body: uploadData,
-      });
-      const data = await res.json();
-      if (data.success && data.url) {
-        if (docType === "proposal") {
-          setFormData((prev) => ({
-            ...prev,
-            proposalPdf: data.url,
-            proposalPdfName: data.fileName || file.name,
-          }));
-        } else {
-          setFormData((prev) => ({
-            ...prev,
-            reportPdf: data.url,
-            reportPdfName: data.fileName || file.name,
-          }));
-        }
-      } else {
-        // Fallback: Read as data URL
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const dataUrl = event.target?.result;
-          if (docType === "proposal") {
-            setFormData((prev) => ({
-              ...prev,
-              proposalPdf: String(dataUrl),
-              proposalPdfName: file.name,
-            }));
-          } else {
-            setFormData((prev) => ({
-              ...prev,
-              reportPdf: String(dataUrl),
-              reportPdfName: file.name,
-            }));
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    } catch (err) {
-      console.warn("Upload PDF API error, reading as fallback:", err);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result;
-        if (docType === "proposal") {
-          setFormData((prev) => ({
-            ...prev,
-            proposalPdf: String(dataUrl),
-            proposalPdfName: file.name,
-          }));
-        } else {
-          setFormData((prev) => ({
-            ...prev,
-            reportPdf: String(dataUrl),
-            reportPdfName: file.name,
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
-    } finally {
-      if (docType === "proposal") setIsUploadingProposal(false);
-      else setIsUploadingReport(false);
-    }
-  };
-
-  const removeProposalPdf = () => {
-    setFormData((prev) => ({ ...prev, proposalPdf: "", proposalPdfName: "" }));
-  };
-
-  const removeReportPdf = () => {
-    setFormData((prev) => ({ ...prev, reportPdf: "", reportPdfName: "" }));
-  };
-
+  // Submit project proposal or update existing
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
@@ -279,10 +176,7 @@ export default function SubmitProjectPage() {
       image: proj.image || (proj.images && proj.images[0]) || "",
       images: (proj.images && proj.images.length > 0) ? proj.images.slice(0, 3) : (proj.image ? [proj.image] : []),
       driveLink: proj.driveLink || "",
-      proposalPdf: proj.proposalPdf || "",
-      proposalPdfName: proj.proposalPdfName || "",
-      reportPdf: proj.reportPdf || "",
-      reportPdfName: proj.reportPdfName || "",
+      proposalDriveLink: proj.proposalDriveLink || proj.reportDriveLink || "",
       projectChair: proj.projectChair || "",
       projectSecretary: proj.projectSecretary || "",
       projectTreasurer: proj.projectTreasurer || "",
@@ -543,124 +437,23 @@ export default function SubmitProjectPage() {
                 </div>
               </div>
 
-              {/* PROJECT DOCUMENTS (PDF) */}
-              <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-4">
+              {/* PROJECT PROPOSAL & REPORT (GOOGLE DRIVE) */}
+              <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-                    Project Proposal &amp; Report (PDF)
-                  </h3>
+                  <label className="text-xs font-bold uppercase tracking-wider text-white block">
+                    Project Proposal &amp; Report Google Drive Link
+                  </label>
                   <p className="text-[11px] text-slate-400 font-light mt-1">
-                    Upload official Project Proposal and Project Report in PDF format for club administration records.
+                    Provide a Google Drive folder or document link containing the official Project Proposal and Project Report for club administration records.
                   </p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                  {/* 1. Project Proposal PDF */}
-                  <div className="p-4 rounded-xl bg-[#0c1017] border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                        1. Project Proposal (PDF)
-                      </label>
-                      {formData.proposalPdf && (
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-500/30">
-                          Attached
-                        </span>
-                      )}
-                    </div>
-
-                    {formData.proposalPdf ? (
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/80 border border-slate-700">
-                        <span className="text-xs font-semibold text-white truncate">
-                          {formData.proposalPdfName || "Project_Proposal.pdf"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={removeProposalPdf}
-                          className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors ml-2 shrink-0 cursor-pointer text-xs font-bold"
-                          title="Remove file"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-[#e6007e] rounded-xl cursor-pointer transition-colors group bg-slate-900/40">
-                        {isUploadingProposal ? (
-                          <div className="flex items-center gap-2 text-xs text-[#e6007e]">
-                            <Loader2 size={16} className="animate-spin" />
-                            <span>Uploading Proposal...</span>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
-                              Upload Proposal PDF
-                            </span>
-                            <span className="text-[10px] text-slate-500 mt-0.5">Click to browse (.pdf, max 25MB)</span>
-                          </>
-                        )}
-                        <input
-                          type="file"
-                          accept="application/pdf,.pdf"
-                          disabled={isUploadingProposal}
-                          onChange={(e) => handlePdfUpload(e, "proposal")}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
-
-                  {/* 2. Project Report PDF */}
-                  <div className="p-4 rounded-xl bg-[#0c1017] border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                        2. Project Report (PDF)
-                      </label>
-                      {formData.reportPdf && (
-                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-500/30">
-                          Attached
-                        </span>
-                      )}
-                    </div>
-
-                    {formData.reportPdf ? (
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/80 border border-slate-700">
-                        <span className="text-xs font-semibold text-white truncate">
-                          {formData.reportPdfName || "Project_Report.pdf"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={removeReportPdf}
-                          className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg transition-colors ml-2 shrink-0 cursor-pointer text-xs font-bold"
-                          title="Remove file"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-[#e6007e] rounded-xl cursor-pointer transition-colors group bg-slate-900/40">
-                        {isUploadingReport ? (
-                          <div className="flex items-center gap-2 text-xs text-[#e6007e]">
-                            <Loader2 size={16} className="animate-spin" />
-                            <span>Uploading Report...</span>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
-                              Upload Report PDF
-                            </span>
-                            <span className="text-[10px] text-slate-500 mt-0.5">Click to browse (.pdf, max 25MB)</span>
-                          </>
-                        )}
-                        <input
-                          type="file"
-                          accept="application/pdf,.pdf"
-                          disabled={isUploadingReport}
-                          onChange={(e) => handlePdfUpload(e, "report")}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
-                </div>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/drive/folders/... or document link"
+                  value={formData.proposalDriveLink || ""}
+                  onChange={(e) => setFormData({ ...formData, proposalDriveLink: e.target.value, reportDriveLink: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-600 focus:border-[#e6007e] outline-none"
+                />
               </div>
 
               <div>

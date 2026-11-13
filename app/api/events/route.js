@@ -10,70 +10,12 @@ import {
 } from "@/lib/serverRateLimit";
 import { sanitizeInput, sanitizeUrl } from "@/lib/security";
 
-const initialEvents = [
-  {
-    title: "SLTC Youth Leadership Conclave 2026",
-    subtitle: "Empowering Next-Gen Visionaries",
-    description: "An intensive full-day leadership summit featuring industry veterans, interactive breakout circles, and ethical leadership development modules tailored for university undergraduates.",
-    avenue: "Professional Development Avenue",
-    date: "2026-11-14",
-    time: "09:00 AM - 04:30 PM",
-    location: "SLTC Main Auditorium, Padukka",
-    image: "/images/hero.jpg",
-    registrationLink: "/join-us",
-    registrationOpen: true,
-    featured: true,
-    status: "upcoming",
-    tags: ["Leadership", "Keynote", "Networking", "District 3220"],
-  },
-  {
-    title: "EcoPulse: Mangrove & Coastal Restoration",
-    subtitle: "Conserving Sri Lanka's Coastline",
-    description: "Hands-on environmental conservation drive partnering with local environmentalists to restore coastal mangrove ecosystems, collect marine plastic, and conduct community awareness workshops.",
-    avenue: "Environmental Service Avenue",
-    date: "2026-11-28",
-    time: "06:30 AM - 01:00 PM",
-    location: "Kalutara Estuary & Coastal Reserve",
-    image: "/images/projects/project1.jpg",
-    registrationLink: "/contact",
-    registrationOpen: true,
-    featured: true,
-    status: "upcoming",
-    tags: ["Sustainability", "EcoAction", "OceanCare", "Volunteer"],
-  },
-  {
-    title: "CodeCraft 2.0: AI For Good Hackathon",
-    subtitle: "Build Solutions for Social Impact",
-    description: "A fast-paced 24-hour innovation challenge where student developers, UI/UX designers, and problem solvers collaborate to create open-source software addressing grassroots challenges.",
-    avenue: "Professional Development Avenue",
-    date: "2026-12-12",
-    time: "08:30 AM Onwards",
-    location: "SLTC Computing & Tech Park",
-    image: "/images/projects/project2.jpg",
-    registrationLink: "/projects/submit",
-    registrationOpen: true,
-    featured: true,
-    status: "upcoming",
-    tags: ["Hackathon", "AI", "OpenSource", "TechInnovation"],
-  },
-];
+const initialEvents = [];
 
 // GET /api/events - Retrieve upcoming club events (Public & Admin)
 export async function GET(request) {
   try {
     await dbConnect();
-
-    // Auto-seed if database collection is empty
-    const count = await Event.countDocuments();
-    if (count === 0) {
-      await Event.insertMany(
-        initialEvents.map((ev) => ({
-          ...ev,
-          approvalStatus: "approved",
-          submittedBy: "Rotaract Executive Board",
-        }))
-      );
-    }
 
     const { searchParams } = new URL(request.url);
     const avenue = searchParams.get("avenue");
@@ -88,15 +30,19 @@ export async function GET(request) {
       query.avenue = avenue;
     }
 
-    // Default for public site: ONLY show approved events!
-    // approvalStatus="all" -> returns all (used by Admin Events tab)
-    // approvalStatus="pending" -> returns pending (used by Admin Approvals tab)
+    // Default for public site: ONLY show approved events (also include legacy events without approvalStatus field)
     if (approvalStatus === "all") {
       // no filter on approvalStatus
-    } else if (approvalStatus) {
-      query.approvalStatus = approvalStatus;
+    } else if (approvalStatus === "pending") {
+      query.approvalStatus = "pending";
+    } else if (approvalStatus === "rejected") {
+      query.approvalStatus = "rejected";
     } else {
-      query.approvalStatus = "approved";
+      query.$or = [
+        { approvalStatus: "approved" },
+        { approvalStatus: { $exists: false } },
+        { approvalStatus: null },
+      ];
     }
 
     const events = await Event.find(query).sort({ date: 1 });
@@ -180,7 +126,7 @@ export async function POST(request) {
     date: sanitizeInput(date),
     time: sanitizeInput(time || "TBD"),
     location: sanitizeInput(location || "SLTC Research University, Padukka"),
-    image: sanitizeUrl(body.image || "/images/hero.jpg"),
+    image: sanitizeUrl(body.image || ""),
     registrationLink: sanitizeUrl(registrationLink || "/join-us"),
     registrationOpen: body.registrationOpen ?? true,
     featured: body.featured ?? true,

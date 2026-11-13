@@ -51,8 +51,10 @@ export async function GET(request) {
       if (!isAdmin) {
         delete obj.proposalPdf;
         delete obj.proposalPdfName;
+        delete obj.proposalDriveLink;
         delete obj.reportPdf;
         delete obj.reportPdfName;
+        delete obj.reportDriveLink;
       }
       return obj;
     });
@@ -96,8 +98,10 @@ export async function GET(request) {
       if (!isAdmin) {
         delete obj.proposalPdf;
         delete obj.proposalPdfName;
+        delete obj.proposalDriveLink;
         delete obj.reportPdf;
         delete obj.reportPdfName;
+        delete obj.reportDriveLink;
       }
       return obj;
     });
@@ -143,6 +147,8 @@ export async function POST(request) {
     image,
     images,
     driveLink,
+    proposalDriveLink,
+    reportDriveLink,
     proposalPdf,
     proposalPdfName,
     reportPdf,
@@ -200,6 +206,8 @@ export async function POST(request) {
       image: primaryImage || (galleryImages[0] || ""),
       images: galleryImages,
       driveLink: sanitizeUrl(driveLink.trim()),
+      proposalDriveLink: proposalDriveLink ? sanitizeUrl(proposalDriveLink.trim()) : "",
+      reportDriveLink: reportDriveLink ? sanitizeUrl(reportDriveLink.trim()) : "",
       proposalPdf: proposalPdf ? sanitizeUrl(proposalPdf) : "",
       proposalPdfName: sanitizeInput(proposalPdfName || ""),
       reportPdf: reportPdf ? sanitizeUrl(reportPdf) : "",

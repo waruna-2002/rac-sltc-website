@@ -59,42 +59,52 @@ export default function VisualSiteCustomizer({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Instant local preview for zero-latency UX
+    const instantPreview = URL.createObjectURL(file);
+    const previousImageUrl = siteContent[targetField] || "";
+    updateContent(targetField, instantPreview);
+
     setIsUploadingPhoto(true);
     showToast("Uploading image to Cloudinary CDN...", "info");
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 40000); // 40s timeout
 
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("title", file.name || "Site Asset");
       formData.append("avenue", "General");
+      if (previousImageUrl) {
+        formData.append("previousImageUrl", previousImageUrl);
+      }
 
       const res = await fetch("/api/upload", {
         method: "POST",
         credentials: "include",
+        signal: controller.signal,
         body: formData,
       });
+      clearTimeout(timeoutId);
 
       const json = await res.json();
       if (json.success && json.data?.imageUrl) {
         updateContent(targetField, json.data.imageUrl);
-        showToast("Image updated via Cloudinary!", "success");
+        showToast("Image uploaded to Cloudinary CDN successfully!", "success");
       } else {
-        // Fallback local base64 reader
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          if (evt.target?.result) {
-            updateContent(targetField, evt.target.result);
-            showToast("Image updated locally!", "success");
-          }
-        };
-        reader.readAsDataURL(file);
+        showToast(json.error || "Upload failed, retained local preview.", "warning");
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.warn("Direct Cloudinary upload error:", err);
-      showToast("Error uploading image.", "error");
+      if (err.name === "AbortError") {
+        showToast("Upload timed out after 40s. Retained preview.", "error");
+      } else {
+        showToast("Error uploading image. Retained preview.", "error");
+      }
     } finally {
       setIsUploadingPhoto(false);
-      e.target.value = "";
+      if (e.target) e.target.value = "";
     }
   };
 

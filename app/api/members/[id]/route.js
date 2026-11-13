@@ -4,6 +4,7 @@ import MemberRegistration from "@/models/MemberRegistration";
 import mongoose from "mongoose";
 import { requireAdmin } from "@/lib/serverAuth";
 import { memoryStore } from "@/lib/memoryStore";
+import { deleteCloudinaryFile } from "@/lib/cloudinaryCleanup";
 
 // PATCH /api/members/[id] - Update registration status (Super Admin Only)
 export async function PATCH(request, { params }) {
@@ -85,7 +86,19 @@ export async function DELETE(request, { params }) {
     await dbConnect();
 
     if (mongoose.Types.ObjectId.isValid(id)) {
-      await MemberRegistration.findByIdAndDelete(id);
+      const deleted = await MemberRegistration.findByIdAndDelete(id);
+      if (deleted) {
+        if (deleted.photoUrl) {
+          deleteCloudinaryFile(deleted.photoUrl).catch((err) =>
+            console.warn("[Member Auto-Cleanup] Photo deletion note:", err.message)
+          );
+        }
+        if (deleted.paymentReceiptUrl) {
+          deleteCloudinaryFile(deleted.paymentReceiptUrl, "raw").catch((err) =>
+            console.warn("[Member Auto-Cleanup] Receipt deletion note:", err.message)
+          );
+        }
+      }
     }
   } catch (error) {
     console.warn("DELETE /api/members/[id] fallback mode:", error.message);

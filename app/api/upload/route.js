@@ -4,6 +4,7 @@ import dbConnect from "@/lib/mongodb";
 import Media from "@/models/Media";
 import { requireAdmin } from "@/lib/serverAuth";
 import { sanitizeInput } from "@/lib/security";
+import { deleteCloudinaryFile } from "@/lib/cloudinaryCleanup";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -43,6 +44,7 @@ export async function POST(req) {
     const file = formData.get("file");
     const rawTitle = formData.get("title") || "Untitled Project Photo";
     const rawAvenue = formData.get("avenue") || "General";
+    const previousImageUrl = formData.get("previousImageUrl") || formData.get("oldImageUrl");
 
     if (!file || typeof file === "string") {
       return NextResponse.json(
@@ -87,13 +89,15 @@ export async function POST(req) {
       );
     }
 
-    await dbConnect();
-
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload securely to Cloudinary in rotaract_sltc folder
+    // Upload securely to Cloudinary in rotaract_sltc folder with 35s timeout
     const uploadResponse = await new Promise((resolve, reject) => {
+      const uploadTimer = setTimeout(() => {
+        reject(new Error("Cloudinary CDN upload timed out after 35 seconds. Please check your network connection."));
+      }, 35000);
+
       cloudinary.uploader
         .upload_stream(
           {
@@ -101,6 +105,7 @@ export async function POST(req) {
             resource_type: "image",
           },
           (error, result) => {
+            clearTimeout(uploadTimer);
             if (error) reject(error);
             else resolve(result);
           }
@@ -111,13 +116,42 @@ export async function POST(req) {
     const title = sanitizeInput(String(rawTitle));
     const avenue = sanitizeInput(String(rawAvenue));
 
-    // Save metadata and secure URL in MongoDB
-    const newMedia = await Media.create({
+    // Save metadata and secure URL in MongoDB (non-blocking fallback to keep upload snappy)
+    let newMedia = {
       title,
       imageUrl: uploadResponse.secure_url,
       publicId: uploadResponse.public_id,
       avenue,
-    });
+    };
+
+    try {
+      await dbConnect();
+      const savedDoc = await Media.create({
+        title,
+        imageUrl: uploadResponse.secure_url,
+        publicId: uploadResponse.public_id,
+        avenue,
+      });
+      newMedia = savedDoc;
+    } catch (dbErr) {
+      console.warn("MongoDB media registry note (Cloudinary upload succeeded):", dbErr.message);
+    }
+
+    // Auto-clean: If replacing an existing Cloudinary asset, delete the previous image from Cloudinary
+    if (
+      previousImageUrl &&
+      typeof previousImageUrl === "string" &&
+      previousImageUrl.includes("res.cloudinary.com")
+    ) {
+      deleteCloudinaryFile(previousImageUrl).catch((err) =>
+        console.warn("[Upload Auto-Cleanup] Previous image deletion note:", err.message)
+      );
+      try {
+        await Media.findOneAndDelete({ imageUrl: previousImageUrl });
+      } catch (delErr) {
+        // non-blocking
+      }
+    }
 
     return NextResponse.json(
       { success: true, data: newMedia, message: "Image uploaded successfully." },

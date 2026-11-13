@@ -17,9 +17,27 @@ const InstagramIcon = () => (
   </svg>
 );
 
-export default function PersonCard({ id, name, role, faculty, image, linkedin, instagram, onClick }) {
+export default function PersonCard({ id, name, role, faculty, avenue, image, linkedin, instagram, onClick }) {
   const isPresident = role && role.trim().toLowerCase() === "president";
-  const hasCustomImage = image && image !== "/images/team/placeholder.jpg";
+  const hasCustomImage = image && image !== "/images/team/placeholder.jpg" && image.trim() !== "";
+
+  const hasLinkedIn = Boolean(
+    linkedin &&
+    typeof linkedin === "string" &&
+    linkedin.trim() !== "" &&
+    linkedin.trim() !== "https://linkedin.com" &&
+    linkedin.trim() !== "https://www.linkedin.com" &&
+    linkedin.trim() !== "#"
+  );
+
+  const hasInstagram = Boolean(
+    instagram &&
+    typeof instagram === "string" &&
+    instagram.trim() !== "" &&
+    instagram.trim() !== "https://instagram.com" &&
+    instagram.trim() !== "https://www.instagram.com" &&
+    instagram.trim() !== "#"
+  );
 
   return (
     <motion.div
@@ -57,7 +75,7 @@ export default function PersonCard({ id, name, role, faculty, image, linkedin, i
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-xl font-bold text-slate-400 group-hover:text-white bg-slate-800">
-            {name.split(" ").slice(1, 3).map(n => n[0]).join("")}
+            {name ? name.split(" ").slice(1, 3).map(n => n[0]).join("") : "R"}
           </div>
         )}
       </div>
@@ -78,43 +96,54 @@ export default function PersonCard({ id, name, role, faculty, image, linkedin, i
         {role}
       </p>
 
-      <p className="text-[11px] text-slate-400 mt-1 mb-4 font-light">
-        {faculty}
-      </p>
+      {/* Avenue Tag */}
+      {avenue && avenue !== "Executive / General" && (
+        <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-0.5 rounded-full mt-1.5">
+          {avenue}
+        </span>
+      )}
+
+      {faculty && (
+        <p className="text-[11px] text-slate-400 mt-1 mb-4 font-light">
+          {faculty}
+        </p>
+      )}
 
       {/* View Profile Indicator Button */}
-      <div className="mb-4 inline-flex items-center gap-1 text-[10px] font-bold text-[#e6007e] group-hover:text-white uppercase tracking-wider bg-[#e6007e]/10 group-hover:bg-[#e6007e] px-3 py-1 rounded-full transition-colors border border-[#e6007e]/30">
+      <div className="my-3 inline-flex items-center gap-1 text-[10px] font-bold text-[#e6007e] group-hover:text-white uppercase tracking-wider bg-[#e6007e]/10 group-hover:bg-[#e6007e] px-3 py-1 rounded-full transition-colors border border-[#e6007e]/30">
         <UserCheck size={12} />
         <span>View Profile</span>
       </div>
 
-      {/* Social Links */}
-      <div className="flex items-center gap-3 mt-auto pt-4 border-t border-slate-800/80 w-full justify-center">
-        {linkedin && (
-          <a
-            href={linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`${name}'s LinkedIn`}
-            className="w-8.5 h-8.5 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
-          >
-            <LinkedinIcon />
-          </a>
-        )}
-        {instagram && (
-          <a
-            href={instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`${name}'s Instagram`}
-            className="w-8.5 h-8.5 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
-          >
-            <InstagramIcon />
-          </a>
-        )}
-      </div>
+      {/* Social Links (Rendered only when at least one valid profile is present) */}
+      {(hasLinkedIn || hasInstagram) && (
+        <div className="flex items-center gap-3 mt-auto pt-4 border-t border-slate-800/80 w-full justify-center">
+          {hasLinkedIn && (
+            <a
+              href={linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`${name}'s LinkedIn`}
+              className="w-8.5 h-8.5 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
+            >
+              <LinkedinIcon />
+            </a>
+          )}
+          {hasInstagram && (
+            <a
+              href={instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`${name}'s Instagram`}
+              className="w-8.5 h-8.5 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
+            >
+              <InstagramIcon />
+            </a>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }

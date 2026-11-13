@@ -8,15 +8,8 @@ import {
   Menu, 
   X, 
   ArrowUpRight, 
-  PlusCircle, 
   ChevronDown,
-  BookOpen,
-  Newspaper,
-  FileText,
-  Globe,
-  FolderKanban,
-  Calendar,
-  CalendarPlus
+  PlusCircle
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 
@@ -157,68 +150,54 @@ export default function Navbar() {
                               transition={{ duration: 0.2 }}
                               className="pl-3 pr-1 py-1 space-y-1 overflow-hidden"
                             >
-                              {/* 1. All Projects (දැනට තියන Projects) */}
+                              {/* 1. All Projects */}
                               <Link
                                 href="/projects"
                                 onClick={() => setIsOpen(false)}
-                                className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between group/sub transition-colors ${
+                                className={`px-4 py-2.5 rounded-xl text-xs font-medium block transition-colors ${
                                   pathname === "/projects"
-                                    ? "bg-slate-900 text-white"
+                                    ? "bg-slate-900 text-white font-semibold"
                                     : "text-slate-300 hover:text-white hover:bg-slate-900"
                                 }`}
                               >
-                                <div className="flex items-center gap-2.5">
-                                  <FolderKanban size={14} className="text-[#e6007e]" />
-                                  <span>All Projects</span>
-                                </div>
-                                <span className="text-[10px] text-slate-500 group-hover/sub:text-slate-400">Current</span>
+                                All Projects
                               </Link>
 
-                              {/* 2. Upcoming Events (දැනට තියන Upcoming) */}
+                              {/* 2. Upcoming Events */}
                               <Link
                                 href="/#upcoming-events"
                                 onClick={() => setIsOpen(false)}
-                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center justify-between group/sub transition-colors"
+                                className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 block transition-colors"
                               >
-                                <div className="flex items-center gap-2.5">
-                                  <Calendar size={14} className="text-[#e6007e]" />
-                                  <span>Upcoming Events</span>
-                                </div>
-                                <span className="text-[10px] text-slate-500 group-hover/sub:text-slate-400">Upcoming</span>
+                                Upcoming Events
                               </Link>
 
-                              {/* 3. Submit Project Proposal (Project Submit කරන එක) */}
+                              {/* 3. Submit Project Proposal */}
                               <Link
                                 href="/projects/submit"
                                 onClick={() => setIsOpen(false)}
-                                className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between group/sub transition-colors ${
+                                className={`px-4 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2.5 transition-colors ${
                                   pathname === "/projects/submit"
-                                    ? "bg-slate-900 text-white"
+                                    ? "bg-slate-900 text-white font-semibold"
                                     : "text-slate-300 hover:text-white hover:bg-slate-900"
                                 }`}
                               >
-                                <div className="flex items-center gap-2.5">
-                                  <PlusCircle size={14} className="text-[#e6007e]" />
-                                  <span>Submit Project</span>
-                                </div>
-                                <span className="text-[10px] text-[#e6007e]/90 bg-[#e6007e]/10 px-1.5 py-0.5 rounded font-semibold">Proposal</span>
+                                <PlusCircle size={14} className="text-[#e6007e] shrink-0" />
+                                <span>Submit Project</span>
                               </Link>
 
-                              {/* 4. Propose Upcoming Event (Upcoming Submit කරන එක) */}
+                              {/* 4. Propose Upcoming Event */}
                               <Link
                                 href="/events/submit"
                                 onClick={() => setIsOpen(false)}
-                                className={`px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between group/sub transition-colors ${
+                                className={`px-4 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2.5 transition-colors ${
                                   pathname === "/events/submit"
-                                    ? "bg-slate-900 text-white"
+                                    ? "bg-slate-900 text-white font-semibold"
                                     : "text-slate-300 hover:text-white hover:bg-slate-900"
                                 }`}
                               >
-                                <div className="flex items-center gap-2.5">
-                                  <CalendarPlus size={14} className="text-cyan-400" />
-                                  <span>Propose Upcoming Event</span>
-                                </div>
-                                <span className="text-[10px] text-cyan-400/90 bg-cyan-400/10 px-1.5 py-0.5 rounded font-semibold">Propose</span>
+                                <PlusCircle size={14} className="text-cyan-400 shrink-0" />
+                                <span>Propose Upcoming Event</span>
                               </Link>
                             </motion.div>
                           )}
@@ -263,37 +242,33 @@ export default function Navbar() {
                               <Link
                                 href="/media?category=blogs"
                                 onClick={() => setIsOpen(false)}
-                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                                className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 block transition-colors"
                               >
-                                <BookOpen size={14} className="text-[#e6007e]" />
-                                <span>Blogs</span>
+                                Blogs
                               </Link>
 
                               <Link
                                 href="/media?category=articles"
                                 onClick={() => setIsOpen(false)}
-                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                                className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 block transition-colors"
                               >
-                                <Newspaper size={14} className="text-[#e6007e]" />
-                                <span>Articles</span>
+                                Articles
                               </Link>
 
                               <Link
                                 href="/media?category=bulletins"
                                 onClick={() => setIsOpen(false)}
-                                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                                className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 block transition-colors"
                               >
-                                <FileText size={14} className="text-[#e6007e]" />
-                                <span>Bulletins & Reports</span>
+                                Bulletins & Reports
                               </Link>
 
                               <Link
                                 href="/media"
                                 onClick={() => setIsOpen(false)}
-                                className="px-3 py-1.5 rounded-xl text-[11px] font-medium text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-2.5 transition-colors"
+                                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-900 block transition-colors"
                               >
-                                <Globe size={13} className="text-slate-500" />
-                                <span>All Media</span>
+                                All Media
                               </Link>
                             </motion.div>
                           )}

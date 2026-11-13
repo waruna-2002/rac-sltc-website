@@ -12,6 +12,7 @@ const AdminContext = createContext();
 export function AdminProvider({ children }) {
   const [adminRole, setAdminRole] = useState(null); // null | "super_admin" | "project_editor"
   const [isVerifying, setIsVerifying] = useState(true);
+  const [isPanelUnlocked, setIsPanelUnlocked] = useState(false);
   const [editModalConfig, setEditModalConfig] = useState(null);
   const [editMode, setEditMode] = useState(false); // Controls visibility of floating in-context edit buttons (Default OFF for clean view)
   const [isToolbarMinimized, setIsToolbarMinimized] = useState(false);
@@ -32,6 +33,8 @@ export function AdminProvider({ children }) {
         if (data.authenticated && data.role) {
           setAdminRole(data.role);
           if (typeof window !== "undefined") {
+            const tabUnlocked = sessionStorage.getItem("rotaract_admin_panel_unlocked") === "true";
+            setIsPanelUnlocked(tabUnlocked);
             localStorage.setItem("rotaract_sltc_admin_role", data.role);
             localStorage.setItem("rotaract_sltc_admin_session", "true");
           }
@@ -45,7 +48,9 @@ export function AdminProvider({ children }) {
 
     // If server reports no valid cryptographic session, invalidate any forged local storage
     setAdminRole(null);
+    setIsPanelUnlocked(false);
     if (typeof window !== "undefined") {
+      sessionStorage.removeItem("rotaract_admin_panel_unlocked");
       localStorage.removeItem("rotaract_sltc_admin_role");
       localStorage.removeItem("rotaract_sltc_admin_session");
     }
@@ -80,7 +85,9 @@ export function AdminProvider({ children }) {
 
       // Case 2: Trusted device direct login
       setAdminRole(authResult.role);
+      setIsPanelUnlocked(true);
       if (typeof window !== "undefined") {
+        sessionStorage.setItem("rotaract_admin_panel_unlocked", "true");
         localStorage.setItem("rotaract_sltc_admin_role", authResult.role);
         localStorage.setItem("rotaract_sltc_admin_session", "true");
       }
@@ -101,7 +108,9 @@ export function AdminProvider({ children }) {
     const result = await verifyLoginOtp({ email, otp, tempToken });
     if (result.success) {
       setAdminRole(result.role);
+      setIsPanelUnlocked(true);
       if (typeof window !== "undefined") {
+        sessionStorage.setItem("rotaract_admin_panel_unlocked", "true");
         localStorage.setItem("rotaract_sltc_admin_role", result.role);
         localStorage.setItem("rotaract_sltc_admin_session", "true");
       }
@@ -121,7 +130,9 @@ export function AdminProvider({ children }) {
     }
 
     setAdminRole(null);
+    setIsPanelUnlocked(false);
     if (typeof window !== "undefined") {
+      sessionStorage.removeItem("rotaract_admin_panel_unlocked");
       localStorage.removeItem("rotaract_sltc_admin_role");
       localStorage.removeItem("rotaract_sltc_admin_session");
     }
@@ -147,6 +158,8 @@ export function AdminProvider({ children }) {
         isProjectEditor,
         adminRole,
         isVerifying,
+        isPanelUnlocked,
+        setIsPanelUnlocked,
         loginAdmin,
         submitLoginOtp,
         logoutAdmin,

@@ -52,7 +52,7 @@ const EventSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      default: "/images/hero.jpg",
+      default: "",
     },
     registrationLink: {
       type: String,

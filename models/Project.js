@@ -69,6 +69,14 @@ const ProjectSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    proposalDriveLink: {
+      type: String,
+      default: "",
+    },
+    reportDriveLink: {
+      type: String,
+      default: "",
+    },
     proposalPdf: {
       type: String,
       default: "",

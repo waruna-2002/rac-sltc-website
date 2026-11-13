@@ -220,12 +220,19 @@ function MediaContent() {
               >
                 <div>
                   <div className="relative h-48 w-full overflow-hidden bg-slate-900">
-                    <Image
-                      src={article.image || "/images/hero.jpg"}
-                      alt={article.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {article.image ? (
+                      <Image
+                        src={article.image}
+                        alt={article.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-[#0c1017] to-slate-950 p-4 text-center">
+                        <Newspaper size={32} className="text-slate-700 mb-2" />
+                        <span className="text-xs font-semibold text-slate-400">{article.avenue}</span>
+                      </div>
+                    )}
                     <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-slate-900/90 backdrop-blur-md border border-slate-800 text-slate-200 font-bold text-[10px] uppercase tracking-wider">
                       {article.avenue}
                     </span>
@@ -320,6 +327,19 @@ function MediaContent() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* --- EMPTY STATE WHEN NO PUBLICATIONS EXIST --- */}
+      {blogs.length === 0 && articles.length === 0 && bulletins.length === 0 && (
+        <div className="text-center py-20 px-6 rounded-3xl bg-[#0c1017]/60 border border-slate-800 max-w-xl mx-auto space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#e6007e]/10 text-[#ff4d94] flex items-center justify-center mx-auto border border-[#e6007e]/30">
+            <BookOpen size={26} />
+          </div>
+          <h3 className="text-lg font-bold text-white">No Publications Published Yet</h3>
+          <p className="text-xs text-slate-400 font-light leading-relaxed">
+            Articles, blogs, and official club bulletins for the current term will appear here once published by the Editorial &amp; Public Image team.
+          </p>
+        </div>
       )}
 
       {/* --- READER MODAL FOR BLOGS & ARTICLES --- */}

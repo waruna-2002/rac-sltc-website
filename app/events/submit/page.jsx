@@ -15,7 +15,9 @@ import {
   Link2,
   User,
   Mail,
-  AlertCircle
+  AlertCircle,
+  X,
+  Trash2
 } from "lucide-react";
 
 export default function SubmitUpcomingEventPage() {
@@ -38,7 +40,7 @@ export default function SubmitUpcomingEventPage() {
     time: "09:00 AM - 01:00 PM",
     location: "SLTC Research University, Padukka",
     description: "",
-    image: "/images/hero.jpg",
+    image: "",
     submittedBy: "",
     submitterEmail: "",
     registrationLink: "",
@@ -309,19 +311,34 @@ export default function SubmitUpcomingEventPage() {
               Cover Banner Photo
             </label>
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative w-full sm:w-48 h-28 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shrink-0">
-                <Image
-                  src={form.image || "/images/hero.jpg"}
-                  alt="Cover Banner"
-                  fill
-                  unoptimized
-                  className="object-cover"
-                />
-              </div>
+              {form.image ? (
+                <div className="relative w-full sm:w-48 h-28 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0 group">
+                  <Image
+                    src={form.image}
+                    alt="Cover Banner"
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, image: "" })}
+                    className="absolute top-1.5 right-1.5 p-1.5 bg-black/80 hover:bg-rose-600 text-white rounded-lg transition-colors cursor-pointer"
+                    title="Remove image"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full sm:w-48 h-28 rounded-2xl bg-slate-900/60 border border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-500 text-xs shrink-0 p-3 text-center">
+                  <Upload size={22} className="text-slate-600 mb-1" />
+                  <span>No banner selected</span>
+                </div>
+              )}
               <label className="flex-1 w-full p-4 rounded-2xl bg-slate-900 hover:bg-slate-850 border border-dashed border-slate-700 hover:border-[#e6007e] text-xs text-slate-300 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all">
                 <Upload size={20} className="text-[#e6007e]" />
                 <span className="font-semibold">
-                  {isUploading ? "Uploading to Cloudinary CDN..." : "Upload Banner Image (JPG, PNG)"}
+                  {isUploading ? "Uploading to Cloudinary CDN..." : form.image ? "Change Banner Image" : "Upload Banner Image (JPG, PNG)"}
                 </span>
                 <span className="text-[10px] text-slate-500">Optimized high-resolution CDN upload</span>
                 <input

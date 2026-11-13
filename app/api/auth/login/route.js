@@ -13,6 +13,7 @@ import {
   getAdminUser,
   verifyPassword,
   verifyDeviceToken,
+  signDeviceToken,
   checkDeviceTrustStatus,
   registerTrustedDevice,
   createOtp,
@@ -77,7 +78,8 @@ export async function POST(request) {
 
     // Password is valid! Check trusted device status & 3-day inactivity rule
     const deviceCookie = request.cookies.get(TRUSTED_DEVICE_COOKIE_NAME)?.value;
-    const clientDeviceId = verifyDeviceToken(deviceCookie);
+    const rawDeviceToken = deviceCookie || body.deviceToken;
+    const clientDeviceId = verifyDeviceToken(rawDeviceToken);
     const trustCheck = checkDeviceTrustStatus(admin, clientDeviceId);
 
     if (trustCheck.trusted) {
@@ -90,11 +92,13 @@ export async function POST(request) {
       });
 
       const token = createSessionToken(admin.role || "super_admin");
+      const signedDevice = signDeviceToken(clientDeviceId);
 
       const response = NextResponse.json({
         success: true,
         directLogin: true,
         role: admin.role || "super_admin",
+        deviceToken: signedDevice,
         message: "Welcome back! Device authenticated.",
       });
 
@@ -105,6 +109,15 @@ export async function POST(request) {
         sameSite: "lax",
         path: "/",
         maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+
+      // Refresh Trusted Device Cookie (90 days)
+      response.cookies.set(TRUSTED_DEVICE_COOKIE_NAME, signedDevice, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 90 * 24 * 60 * 60,
       });
 
       return response;

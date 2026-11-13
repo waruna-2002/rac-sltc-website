@@ -16,14 +16,21 @@ import {
   Users,
   PlusCircle,
   X,
-  Upload
+  Upload,
+  LayoutGrid,
+  CalendarDays,
+  CalendarCheck
 } from "lucide-react";
+import EventCalendar from "@/components/EventCalendar";
+import NotificationPrompt from "@/components/NotificationPrompt";
+import { getGoogleCalendarUrl } from "@/lib/calendarUtils";
 
 export default function UpcomingEventsSection() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAvenue, setSelectedAvenue] = useState("All");
   const [activeModalEvent, setActiveModalEvent] = useState(null);
+  const [viewMode, setViewMode] = useState("calendar"); // 'calendar' | 'cards'
 
   // Viewer proposal modal states
   const [isProposeModalOpen, setIsProposeModalOpen] = useState(false);
@@ -40,7 +47,7 @@ export default function UpcomingEventsSection() {
     time: "09:00 AM - 01:00 PM",
     location: "SLTC Research University, Padukka",
     description: "",
-    image: "/images/hero.jpg",
+    image: "",
     submittedBy: "",
     submitterEmail: "",
     registrationLink: "",
@@ -60,16 +67,29 @@ export default function UpcomingEventsSection() {
     "Environmental Service Avenue",
   ];
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (retryCount = 0) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/events");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch("/api/events", { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setEvents(json.data);
       }
     } catch (err) {
-      console.error("Failed to load events:", err);
+      if (retryCount < 2) {
+        setTimeout(() => fetchEvents(retryCount + 1), 1200);
+        return;
+      }
+      console.warn("Notice: Events fetch fallback active:", err.message);
     } finally {
       setLoading(false);
     }
@@ -230,24 +250,57 @@ export default function UpcomingEventsSection() {
         </div>
       </div>
 
-      {/* Avenue Filter Buttons */}
-      <div className="flex flex-wrap gap-2 mb-8 relative z-10">
-        {avenues.map((ave) => (
+      {/* VISITOR EVENT NOTIFICATIONS REMINDER PROMPT */}
+      <NotificationPrompt />
+
+      {/* Avenue Filter & View Switcher Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 relative z-10">
+        <div className="flex flex-wrap gap-2">
+          {avenues.map((ave) => (
+            <button
+              key={ave}
+              onClick={() => setSelectedAvenue(ave)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedAvenue === ave
+                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30 border border-pink-400/40"
+                  : "bg-[#0c1017] text-slate-400 border border-slate-800 hover:text-white hover:border-slate-700"
+              }`}
+            >
+              {ave}
+            </button>
+          ))}
+        </div>
+
+        {/* View Mode Toggle: Google Calendar vs Grid Cards */}
+        <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1 rounded-xl self-start lg:self-auto shrink-0 shadow-lg">
           <button
-            key={ave}
-            onClick={() => setSelectedAvenue(ave)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              selectedAvenue === ave
-                ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30 border border-pink-400/40"
-                : "bg-[#0c1017] text-slate-400 border border-slate-800 hover:text-white hover:border-slate-700"
+            type="button"
+            onClick={() => setViewMode("calendar")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              viewMode === "calendar"
+                ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
+                : "text-slate-400 hover:text-white"
             }`}
           >
-            {ave}
+            <CalendarDays size={14} />
+            <span>Interactive Calendar</span>
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={() => setViewMode("cards")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              viewMode === "cards"
+                ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <LayoutGrid size={14} />
+            <span>Cards View</span>
+          </button>
+        </div>
       </div>
 
-      {/* Loading Skeleton */}
+      {/* Main Content: Loading | Empty | Calendar View | Cards View */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
           {[1, 2, 3].map((n) => (
@@ -265,9 +318,15 @@ export default function UpcomingEventsSection() {
       ) : filteredEvents.length === 0 ? (
         <div className="p-12 text-center rounded-3xl bg-[#0c1017]/60 border border-slate-800/80 relative z-10">
           <Calendar size={40} className="text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-300 font-semibold text-base">No upcoming events scheduled in this avenue.</p>
+          <p className="text-slate-300 font-semibold text-base">
+            {selectedAvenue === "All"
+              ? "No upcoming events scheduled yet."
+              : `No upcoming events scheduled in ${selectedAvenue}.`}
+          </p>
           <p className="text-slate-500 text-xs mt-1">Have an event in mind? Click &quot;Propose Event&quot; above to submit an upcoming initiative.</p>
         </div>
+      ) : viewMode === "calendar" ? (
+        <EventCalendar events={filteredEvents} onSelectEvent={setActiveModalEvent} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
           {filteredEvents.map((ev, idx) => {
@@ -282,12 +341,19 @@ export default function UpcomingEventsSection() {
                 <div>
                   {/* Event Cover Photo */}
                   <div className="relative h-48 w-full overflow-hidden bg-slate-900">
-                    <Image
-                      src={ev.image || "/images/hero.jpg"}
-                      alt={ev.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {ev.image ? (
+                      <Image
+                        src={ev.image}
+                        alt={ev.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-[#0c1017] to-slate-950 p-4 text-center">
+                        <Calendar size={32} className="text-slate-700 mb-2" />
+                        <span className="text-xs font-semibold text-slate-400">{ev.avenue?.replace(/&amp;/gi, "&")}</span>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0c1017] via-transparent to-black/30" />
 
                     {/* Date Badge */}
@@ -378,12 +444,19 @@ export default function UpcomingEventsSection() {
               className="relative w-full max-w-xl rounded-3xl bg-[#0c1017] border border-slate-800 p-6 sm:p-8 space-y-6 z-10 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="relative h-56 rounded-2xl overflow-hidden bg-slate-900">
-                <Image
-                  src={activeModalEvent.image || "/images/hero.jpg"}
-                  alt={activeModalEvent.title}
-                  fill
-                  className="object-cover"
-                />
+                {activeModalEvent.image ? (
+                  <Image
+                    src={activeModalEvent.image}
+                    alt={activeModalEvent.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-[#0c1017] to-slate-950 p-6 text-center">
+                    <Calendar size={40} className="text-slate-700 mb-2" />
+                    <span className="text-sm font-bold text-slate-300">{activeModalEvent.title}</span>
+                  </div>
+                )}
                 <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#e6007e] text-white text-xs font-black tracking-wider uppercase">
                   {activeModalEvent.avenue?.replace(/&amp;/gi, "&")}
                 </span>
@@ -422,22 +495,35 @@ export default function UpcomingEventsSection() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setActiveModalEvent(null)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
+                <a
+                  href={getGoogleCalendarUrl(activeModalEvent)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400 text-slate-200 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm"
+                  title="Save to your Google Calendar"
                 >
-                  Close
-                </button>
-                <Link
-                  href={activeModalEvent.registrationLink || "/join-us"}
-                  onClick={() => setActiveModalEvent(null)}
-                  className="px-5 py-2.5 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center gap-2 shadow-lg shadow-[#e6007e]/30"
-                >
-                  <span>RSVP / Register</span>
-                  <ExternalLink size={13} />
-                </Link>
+                  <CalendarCheck size={14} className="text-cyan-400" />
+                  <span>Add to Google Calendar</span>
+                </a>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalEvent(null)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <Link
+                    href={activeModalEvent.registrationLink || "/join-us"}
+                    onClick={() => setActiveModalEvent(null)}
+                    className="px-5 py-2.5 rounded-xl bg-[#e6007e] hover:bg-[#c4006c] text-white text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center gap-2 shadow-lg shadow-[#e6007e]/30"
+                  >
+                    <span>RSVP / Register</span>
+                    <ExternalLink size={13} />
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -614,14 +700,20 @@ export default function UpcomingEventsSection() {
                       Cover Banner Image
                     </label>
                     <div className="flex items-center gap-3">
-                      <div className="relative w-16 h-12 rounded-lg overflow-hidden bg-slate-900 border border-slate-800 shrink-0">
-                        <Image
-                          src={proposeForm.image || "/images/hero.jpg"}
-                          alt="Preview"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                      {proposeForm.image ? (
+                        <div className="relative w-16 h-12 rounded-lg overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
+                          <Image
+                            src={proposeForm.image}
+                            alt="Preview"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-12 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 shrink-0">
+                          <Upload size={14} />
+                        </div>
+                      )}
                       <label className="flex-1 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-dashed border-slate-700 hover:border-[#e6007e] text-xs text-slate-300 flex items-center justify-center gap-2 cursor-pointer transition-all">
                         <Upload size={14} className="text-[#e6007e]" />
                         <span>{isUploading ? "Uploading to Cloud..." : "Upload Photo (Cloudinary)"}</span>

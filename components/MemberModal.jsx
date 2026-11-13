@@ -97,6 +97,12 @@ export default function MemberModal({ member, onClose }) {
               {member.role} • <span className="text-slate-400">{member.category}</span>
             </p>
 
+            {member.avenue && member.avenue !== "Executive / General" && (
+              <span className="inline-block mt-2 text-[10px] font-semibold text-cyan-300 bg-cyan-950/50 border border-cyan-800/60 px-3 py-0.5 rounded-full">
+                {member.avenue}
+              </span>
+            )}
+
             <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-2 font-medium">
               <GraduationCap size={15} className="text-cyan-400" />
               <span>{member.faculty}</span>
@@ -147,28 +153,53 @@ export default function MemberModal({ member, onClose }) {
               <span className="text-xs text-slate-500">Rotaract SLTC Chapter</span>
             )}
 
-            <div className="flex items-center gap-3">
-              {member.linkedin && (
-                <a
-                  href={member.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
-                >
-                  <LinkedinIcon />
-                </a>
-              )}
-              {member.instagram && (
-                <a
-                  href={member.instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
-                >
-                  <InstagramIcon />
-                </a>
-              )}
-            </div>
+            {(() => {
+              const hasLinkedIn = Boolean(
+                member.linkedin &&
+                typeof member.linkedin === "string" &&
+                member.linkedin.trim() !== "" &&
+                member.linkedin.trim() !== "https://linkedin.com" &&
+                member.linkedin.trim() !== "https://www.linkedin.com" &&
+                member.linkedin.trim() !== "#"
+              );
+              const hasInstagram = Boolean(
+                member.instagram &&
+                typeof member.instagram === "string" &&
+                member.instagram.trim() !== "" &&
+                member.instagram.trim() !== "https://instagram.com" &&
+                member.instagram.trim() !== "https://www.instagram.com" &&
+                member.instagram.trim() !== "#"
+              );
+
+              if (!hasLinkedIn && !hasInstagram) return null;
+
+              return (
+                <div className="flex items-center gap-3">
+                  {hasLinkedIn && (
+                    <a
+                      href={member.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
+                      aria-label="LinkedIn Profile"
+                    >
+                      <LinkedinIcon />
+                    </a>
+                  )}
+                  {hasInstagram && (
+                    <a
+                      href={member.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-[#e6007e] hover:bg-[#e6007e]/10 transition-colors"
+                      aria-label="Instagram Profile"
+                    >
+                      <InstagramIcon />
+                    </a>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </motion.div>
       </div>

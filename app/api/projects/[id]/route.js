@@ -4,6 +4,7 @@ import Project from "@/models/Project";
 import mongoose from "mongoose";
 import { requireAdmin, getSession } from "@/lib/serverAuth";
 import { memoryStore } from "@/lib/memoryStore";
+import { deleteCloudinaryFile, deleteCloudinaryFiles } from "@/lib/cloudinaryCleanup";
 
 // GET /api/projects/[id] - Public project details
 export async function GET(request, { params }) {
@@ -33,8 +34,10 @@ export async function GET(request, { params }) {
     if (!isAdmin) {
       delete dataObj.proposalPdf;
       delete dataObj.proposalPdfName;
+      delete dataObj.proposalDriveLink;
       delete dataObj.reportPdf;
       delete dataObj.reportPdfName;
+      delete dataObj.reportDriveLink;
     }
 
     return NextResponse.json({ success: true, data: dataObj });
@@ -46,8 +49,10 @@ export async function GET(request, { params }) {
       if (!isAdmin) {
         delete fallbackObj.proposalPdf;
         delete fallbackObj.proposalPdfName;
+        delete fallbackObj.proposalDriveLink;
         delete fallbackObj.reportPdf;
         delete fallbackObj.reportPdfName;
+        delete fallbackObj.reportDriveLink;
       }
       return NextResponse.json({ success: true, data: fallbackObj, fallback: true });
     }
@@ -81,6 +86,26 @@ export async function PATCH(request, { params }) {
     const query = mongoose.Types.ObjectId.isValid(id)
       ? { _id: id }
       : { slug: id };
+
+    // Check existing project to auto-clean replaced assets from Cloudinary
+    const existing = await Project.findOne(query);
+    if (existing) {
+      if (updates.image && existing.image && existing.image !== updates.image) {
+        deleteCloudinaryFile(existing.image).catch((err) =>
+          console.warn("[Project Auto-Cleanup] Old image deletion note:", err.message)
+        );
+      }
+      if (updates.proposalPdf && existing.proposalPdf && existing.proposalPdf !== updates.proposalPdf) {
+        deleteCloudinaryFile(existing.proposalPdf, "raw").catch((err) =>
+          console.warn("[Project Auto-Cleanup] Old proposal PDF deletion note:", err.message)
+        );
+      }
+      if (updates.reportPdf && existing.reportPdf && existing.reportPdf !== updates.reportPdf) {
+        deleteCloudinaryFile(existing.reportPdf, "raw").catch((err) =>
+          console.warn("[Project Auto-Cleanup] Old report PDF deletion note:", err.message)
+        );
+      }
+    }
 
     const updated = await Project.findOneAndUpdate(query, updates, {
       new: true,
@@ -145,6 +170,25 @@ export async function DELETE(request, { params }) {
       return NextResponse.json(
         { success: false, error: "Project not found in database" },
         { status: 404 }
+      );
+    }
+
+    // Auto-clean all associated project images & PDFs from Cloudinary CDN
+    const assetsToPurge = [
+      deleted.image,
+      ...(Array.isArray(deleted.images) ? deleted.images : []),
+    ];
+    deleteCloudinaryFiles(assetsToPurge).catch((err) =>
+      console.warn("[Project Auto-Cleanup] Project images deletion note:", err.message)
+    );
+    if (deleted.proposalPdf) {
+      deleteCloudinaryFile(deleted.proposalPdf, "raw").catch((err) =>
+        console.warn("[Project Auto-Cleanup] Proposal PDF deletion note:", err.message)
+      );
+    }
+    if (deleted.reportPdf) {
+      deleteCloudinaryFile(deleted.reportPdf, "raw").catch((err) =>
+        console.warn("[Project Auto-Cleanup] Report PDF deletion note:", err.message)
       );
     }
 
