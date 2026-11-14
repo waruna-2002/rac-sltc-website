@@ -81,7 +81,8 @@ import {
   BookOpen,
   Newspaper,
   Sparkles,
-  BellRing
+  BellRing,
+  Download
 } from "lucide-react";
 
 function AdminDashboardInner() {
@@ -265,8 +266,11 @@ function AdminDashboardInner() {
   const [newProjectForm, setNewProjectForm] = useState({
     title: "",
     avenue: "Community Service Avenue",
-    date: new Date().toISOString().split("T")[0],
-    impact: "100+ Participants",
+    secondaryAvenue: "",
+    date: "",
+    endDate: "",
+    isOneDay: true,
+    impact: "",
     description: "",
     image: "",
     images: [],
@@ -285,9 +289,12 @@ function AdminDashboardInner() {
     subtitle: "",
     description: "",
     avenue: "Community Service Avenue",
-    date: new Date().toISOString().split("T")[0],
-    time: "09:00 AM - 01:00 PM",
-    location: "SLTC Research University, Padukka",
+    secondaryAvenue: "",
+    date: "",
+    endDate: "",
+    isOneDay: true,
+    time: "",
+    location: "",
     image: "",
     registrationLink: "",
     registrationOpen: true,
@@ -767,6 +774,71 @@ function AdminDashboardInner() {
   const handleDeleteMemberApplication = (id) => {
     const m = memberApplicants.find((a) => (a._id || a.id) === id);
     requestDelete("member", id, m?.fullName ? `${m.fullName}'s application` : "this application");
+  };
+
+  const exportApplicantsToExcel = () => {
+    if (!memberApplicants || memberApplicants.length === 0) {
+      showToast("No applicant records available to export", "error");
+      return;
+    }
+
+    const headers = [
+      "Full Name",
+      "Student ID",
+      "Email",
+      "WhatsApp / Phone",
+      "Faculty",
+      "Year of Study",
+      "Avenue",
+      "NIC",
+      "Date of Birth",
+      "Gender",
+      "Address",
+      "Other Club Experience",
+      "Status",
+      "Registration Date",
+      "Payment Receipt URL",
+      "Photo URL"
+    ];
+
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = memberApplicants.map((m) => [
+      escapeCsv(m.fullName || ""),
+      escapeCsv(m.studentId || ""),
+      escapeCsv(m.email || ""),
+      escapeCsv(m.whatsapp || m.phone || ""),
+      escapeCsv(m.faculty || ""),
+      escapeCsv(m.yearOfStudy || ""),
+      escapeCsv(m.avenue || (m.avenues && m.avenues[0]) || ""),
+      escapeCsv(m.nic || ""),
+      escapeCsv(m.dob || ""),
+      escapeCsv(m.gender || ""),
+      escapeCsv(m.address || ""),
+      escapeCsv(m.otherClub || ""),
+      escapeCsv(m.status || "pending"),
+      escapeCsv(m.createdAt ? new Date(m.createdAt).toLocaleString() : ""),
+      escapeCsv(m.paymentReceiptUrl || ""),
+      escapeCsv(m.photoUrl || "")
+    ].join(","));
+
+    // UTF-8 BOM ensures Excel displays UTF-8 strings properly without character mangling
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateStr = new Date().toISOString().split("T")[0];
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rotaract_SLTC_Member_Applicants_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("Exported member applicants to Excel spreadsheet!", "success");
   };
 
   // --- CONTACT INBOX ACTIONS ---
@@ -1389,7 +1461,7 @@ function AdminDashboardInner() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[11px] text-[#e6007e] hover:underline font-semibold mt-2"
                           >
-                            📁 View Media Album (Google Drive) ↗
+                            View Media Album (Google Drive) ↗
                           </a>
                         )}
 
@@ -1852,6 +1924,15 @@ function AdminDashboardInner() {
             <div className="flex items-center gap-3 text-xs text-slate-400 font-medium">
               <span>Total: <strong className="text-white">{memberApplicants.length}</strong></span>
               <span>Pending: <strong className="text-amber-400">{pendingMembersCount}</strong></span>
+              <button
+                type="button"
+                onClick={exportApplicantsToExcel}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition-all cursor-pointer ml-2"
+                title="Download Member Applicants as Excel Spreadsheet (CSV)"
+              >
+                <Download size={14} />
+                <span>Export to Excel</span>
+              </button>
             </div>
           </div>
 
@@ -2286,7 +2367,7 @@ function AdminDashboardInner() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Primary Avenue</label>
                 <select
                   value={editingProject.avenue || "Community Service Avenue"}
                   onChange={(e) => setEditingProject({ ...editingProject, avenue: e.target.value })}
@@ -2304,6 +2385,27 @@ function AdminDashboardInner() {
               </div>
 
               <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Secondary Avenue (Optional)</label>
+                <select
+                  value={editingProject.secondaryAvenue || ""}
+                  onChange={(e) => setEditingProject({ ...editingProject, secondaryAvenue: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white outline-none focus:border-[#e6007e]"
+                >
+                  <option value="">None / Not Applicable</option>
+                  <option value="Community Service Avenue">Community Service Avenue</option>
+                  <option value="Club Service Avenue">Club Service Avenue</option>
+                  <option value="Professional Development Avenue">Professional Development Avenue</option>
+                  <option value="Membership Development Avenue">Membership Development Avenue</option>
+                  <option value="International Service Avenue">International Service Avenue</option>
+                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
                 <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Approval Status</label>
                 <select
                   value={editingProject.status || "approved"}
@@ -2315,21 +2417,61 @@ function AdminDashboardInner() {
                   <option value="rejected">Rejected</option>
                 </select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Date"
-                type="date"
-                value={editingProject.date || ""}
-                onChange={(e) => setEditingProject({ ...editingProject, date: e.target.value })}
-              />
               <Input
                 label="Impact Metric"
                 value={editingProject.impact || ""}
                 placeholder="e.g. 500+ Beneficiaries"
                 onChange={(e) => setEditingProject({ ...editingProject, impact: e.target.value })}
               />
+            </div>
+
+            {/* Timeline & Duration */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Project Timeline</span>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editingProject.isOneDay ?? !editingProject.endDate}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setEditingProject({
+                        ...editingProject,
+                        isOneDay: checked,
+                        endDate: checked ? "" : editingProject.endDate,
+                      });
+                    }}
+                    className="w-4 h-4 rounded text-[#e6007e] accent-[#e6007e] cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-300">One Day Project</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label={(editingProject.isOneDay ?? !editingProject.endDate) ? "Project Date" : "Start Date"}
+                  type="date"
+                  value={editingProject.date || ""}
+                  onChange={(e) => setEditingProject({ ...editingProject, date: e.target.value })}
+                />
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                    End Date {(editingProject.isOneDay ?? !editingProject.endDate) && <span className="text-slate-400 font-normal lowercase">(disabled)</span>}
+                  </label>
+                  <input
+                    type="date"
+                    disabled={editingProject.isOneDay ?? !editingProject.endDate}
+                    value={(editingProject.isOneDay ?? !editingProject.endDate) ? "" : (editingProject.endDate || "")}
+                    onChange={(e) => setEditingProject({ ...editingProject, endDate: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-xl border text-xs text-white outline-none transition-all ${
+                      (editingProject.isOneDay ?? !editingProject.endDate)
+                        ? "bg-slate-950/60 border-slate-900 text-slate-400 cursor-not-allowed opacity-50"
+                        : "bg-slate-900 border-slate-800 focus:border-[#e6007e]"
+                    }`}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
@@ -2444,9 +2586,9 @@ function AdminDashboardInner() {
             <h3 className="text-xl font-bold text-white">Create New Project</h3>
             <Input label="Title" value={newProjectForm.title} onChange={(e) => setNewProjectForm({ ...newProjectForm, title: e.target.value })} required />
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Primary Avenue</label>
                 <select
                   value={newProjectForm.avenue}
                   onChange={(e) => setNewProjectForm({ ...newProjectForm, avenue: e.target.value })}
@@ -2462,10 +2604,77 @@ function AdminDashboardInner() {
                   <option value="Environmental Service Avenue">Environmental Service Avenue</option>
                 </select>
               </div>
-              <Input label="Date" type="date" value={newProjectForm.date} onChange={(e) => setNewProjectForm({ ...newProjectForm, date: e.target.value })} required />
+
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Secondary Avenue (Optional)</label>
+                <select
+                  value={newProjectForm.secondaryAvenue || ""}
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, secondaryAvenue: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="">None / Not Applicable</option>
+                  <option value="Community Service Avenue">Community Service Avenue</option>
+                  <option value="Club Service Avenue">Club Service Avenue</option>
+                  <option value="Professional Development Avenue">Professional Development Avenue</option>
+                  <option value="Membership Development Avenue">Membership Development Avenue</option>
+                  <option value="International Service Avenue">International Service Avenue</option>
+                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
+                </select>
+              </div>
             </div>
 
-            <Input label="Impact Metric" value={newProjectForm.impact} onChange={(e) => setNewProjectForm({ ...newProjectForm, impact: e.target.value })} />
+            {/* Timeline */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Project Timeline</span>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newProjectForm.isOneDay}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        isOneDay: checked,
+                        endDate: checked ? "" : newProjectForm.endDate,
+                      });
+                    }}
+                    className="w-4 h-4 rounded text-[#e6007e] accent-[#e6007e] cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-300">One Day Project</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label={newProjectForm.isOneDay ? "Project Date" : "Start Date"}
+                  type="date"
+                  value={newProjectForm.date}
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, date: e.target.value })}
+                  required
+                />
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                    End Date {newProjectForm.isOneDay && <span className="text-slate-400 font-normal lowercase">(disabled)</span>}
+                  </label>
+                  <input
+                    type="date"
+                    disabled={newProjectForm.isOneDay}
+                    value={newProjectForm.isOneDay ? "" : newProjectForm.endDate || ""}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, endDate: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-xl border text-xs text-white outline-none transition-all ${
+                      newProjectForm.isOneDay
+                        ? "bg-slate-950/60 border-slate-900 text-slate-400 cursor-not-allowed opacity-50"
+                        : "bg-slate-900 border-slate-800 focus:border-[#e6007e]"
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Input label="Impact Metric" placeholder="e.g. 500+ Beneficiaries" value={newProjectForm.impact} onChange={(e) => setNewProjectForm({ ...newProjectForm, impact: e.target.value })} />
 
             <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
               <label className="text-xs font-bold uppercase text-slate-300 block">Project Leadership Committee</label>
@@ -2541,9 +2750,9 @@ function AdminDashboardInner() {
             <Input label="Event Title" value={newEventForm.title} onChange={(e) => setNewEventForm({ ...newEventForm, title: e.target.value })} required />
             <Input label="Subtitle" value={newEventForm.subtitle} onChange={(e) => setNewEventForm({ ...newEventForm, subtitle: e.target.value })} />
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Primary Avenue</label>
                 <select
                   value={newEventForm.avenue}
                   onChange={(e) => setNewEventForm({ ...newEventForm, avenue: e.target.value })}
@@ -2559,7 +2768,74 @@ function AdminDashboardInner() {
                   <option value="Environmental Service Avenue">Environmental Service Avenue</option>
                 </select>
               </div>
-              <Input label="Date" type="date" value={newEventForm.date} onChange={(e) => setNewEventForm({ ...newEventForm, date: e.target.value })} required />
+
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Secondary Avenue (Optional)</label>
+                <select
+                  value={newEventForm.secondaryAvenue || ""}
+                  onChange={(e) => setNewEventForm({ ...newEventForm, secondaryAvenue: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="">None / Not Applicable</option>
+                  <option value="Community Service Avenue">Community Service Avenue</option>
+                  <option value="Club Service Avenue">Club Service Avenue</option>
+                  <option value="Professional Development Avenue">Professional Development Avenue</option>
+                  <option value="Membership Development Avenue">Membership Development Avenue</option>
+                  <option value="International Service Avenue">International Service Avenue</option>
+                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Event Timeline</span>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newEventForm.isOneDay}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setNewEventForm({
+                        ...newEventForm,
+                        isOneDay: checked,
+                        endDate: checked ? "" : newEventForm.endDate,
+                      });
+                    }}
+                    className="w-4 h-4 rounded text-[#e6007e] accent-[#e6007e] cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-300">One Day Event</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label={newEventForm.isOneDay ? "Event Date" : "Start Date"}
+                  type="date"
+                  value={newEventForm.date}
+                  onChange={(e) => setNewEventForm({ ...newEventForm, date: e.target.value })}
+                  required
+                />
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                    End Date {newEventForm.isOneDay && <span className="text-slate-400 font-normal lowercase">(disabled)</span>}
+                  </label>
+                  <input
+                    type="date"
+                    disabled={newEventForm.isOneDay}
+                    value={newEventForm.isOneDay ? "" : newEventForm.endDate || ""}
+                    onChange={(e) => setNewEventForm({ ...newEventForm, endDate: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-xl border text-xs text-white outline-none transition-all ${
+                      newEventForm.isOneDay
+                        ? "bg-slate-950/60 border-slate-900 text-slate-400 cursor-not-allowed opacity-50"
+                        : "bg-slate-900 border-slate-800 focus:border-[#e6007e]"
+                    }`}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -2628,9 +2904,9 @@ function AdminDashboardInner() {
             <Input label="Event Title" value={editingEvent.title} onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })} required />
             <Input label="Subtitle" value={editingEvent.subtitle || ""} onChange={(e) => setEditingEvent({ ...editingEvent, subtitle: e.target.value })} />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Primary Avenue</label>
                 <select
                   value={editingEvent.avenue}
                   onChange={(e) => setEditingEvent({ ...editingEvent, avenue: e.target.value })}
@@ -2646,7 +2922,74 @@ function AdminDashboardInner() {
                   <option value="Environmental Service Avenue">Environmental Service Avenue</option>
                 </select>
               </div>
-              <Input label="Date" type="date" value={editingEvent.date} onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })} required />
+
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Secondary Avenue (Optional)</label>
+                <select
+                  value={editingEvent.secondaryAvenue || ""}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, secondaryAvenue: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
+                >
+                  <option value="">None / Not Applicable</option>
+                  <option value="Community Service Avenue">Community Service Avenue</option>
+                  <option value="Club Service Avenue">Club Service Avenue</option>
+                  <option value="Professional Development Avenue">Professional Development Avenue</option>
+                  <option value="Membership Development Avenue">Membership Development Avenue</option>
+                  <option value="International Service Avenue">International Service Avenue</option>
+                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Event Timeline</span>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editingEvent.isOneDay ?? !editingEvent.endDate}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setEditingEvent({
+                        ...editingEvent,
+                        isOneDay: checked,
+                        endDate: checked ? "" : editingEvent.endDate,
+                      });
+                    }}
+                    className="w-4 h-4 rounded text-[#e6007e] accent-[#e6007e] cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-300">One Day Event</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label={(editingEvent.isOneDay ?? !editingEvent.endDate) ? "Event Date" : "Start Date"}
+                  type="date"
+                  value={editingEvent.date}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })}
+                  required
+                />
+                <div>
+                  <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                    End Date {(editingEvent.isOneDay ?? !editingEvent.endDate) && <span className="text-slate-400 font-normal lowercase">(disabled)</span>}
+                  </label>
+                  <input
+                    type="date"
+                    disabled={editingEvent.isOneDay ?? !editingEvent.endDate}
+                    value={(editingEvent.isOneDay ?? !editingEvent.endDate) ? "" : (editingEvent.endDate || "")}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, endDate: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-xl border text-xs text-white outline-none transition-all ${
+                      (editingEvent.isOneDay ?? !editingEvent.endDate)
+                        ? "bg-slate-950/60 border-slate-900 text-slate-400 cursor-not-allowed opacity-50"
+                        : "bg-slate-900 border-slate-800 focus:border-[#e6007e]"
+                    }`}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

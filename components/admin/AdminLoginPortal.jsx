@@ -442,7 +442,7 @@ export default function AdminLoginPortal() {
                   {otpStatusMsg}
                 </p>
                 <div className="mt-2 text-[11px] font-mono text-slate-300 bg-slate-950 px-2.5 py-1 rounded border border-slate-800/80 inline-block">
-                  📧 {email}
+                  {email}
                 </div>
               </div>
 

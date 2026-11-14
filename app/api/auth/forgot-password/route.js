@@ -32,7 +32,7 @@ export async function POST(request) {
 
     const admin = await getAdminUser(email);
     if (!admin) {
-      // Don't disclose user existence to unauthenticated callers, but for our admin system reject if non-admin
+      // Reject non-admin requests
       return NextResponse.json(
         { success: false, error: "The provided email is not recognized as an Administrator." },
         { status: 404 }

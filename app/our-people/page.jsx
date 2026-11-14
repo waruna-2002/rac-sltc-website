@@ -6,6 +6,7 @@ import MemberModal from "@/components/MemberModal";
 import { getStoredTeam, syncTeamFromDatabase } from "@/lib/teamStore";
 import { motion } from "framer-motion";
 import { Users } from "lucide-react";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function OurPeoplePage() {
   const [filter, setFilter] = useState("All");
@@ -42,21 +43,14 @@ export default function OurPeoplePage() {
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-14 bg-[#07090e]">
       {/* Page Header */}
-      <div className="text-center max-w-3xl mx-auto">
-        <p className="text-xs font-bold tracking-[0.2em] text-[#e6007e] uppercase mb-3">
-          Leadership &amp; Directors
-        </p>
-        
-        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
-          Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">People</span>
-        </h1>
-        
-        <p className="text-slate-300 text-sm sm:text-base mt-3 font-light leading-relaxed">
-          Meet the passionate visionaries driving the Rotaract Club of SLTC forward for the Rotary Year 2025-26. Click on any member to view full details & achievements.
-        </p>
-
+      <AnimatedPageHeader
+        badge="Leadership & Directors"
+        title="Our People"
+        highlightWord="People"
+        subtitle="Meet the passionate visionaries driving the Rotaract Club of SLTC forward for the Rotary Year 2025-26. Click on any member to view full details & achievements."
+      >
         {/* Filter Tabs */}
-        <div className="flex flex-wrap justify-center gap-2.5 mt-8">
+        <div className="flex flex-wrap justify-center gap-2.5 mt-2">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -71,7 +65,7 @@ export default function OurPeoplePage() {
             </button>
           ))}
         </div>
-      </div>
+      </AnimatedPageHeader>
 
       {/* President Spotlight Section (If All or Executive filter selected) */}
       {(filter === "All" || filter === "Executive Committee") && president && (

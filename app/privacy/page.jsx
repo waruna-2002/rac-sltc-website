@@ -1,9 +1,19 @@
+"use client";
+
 import React from "react";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function PrivacyPolicyPage() {
   return (
     <div className="pt-28 pb-20 px-6 max-w-4xl mx-auto space-y-6 text-slate-300 text-sm leading-relaxed">
-      <h1 className="text-3xl font-extrabold text-white mb-4">Privacy Policy</h1>
+      <AnimatedPageHeader
+        badge="Legal & Compliance"
+        title="Privacy Policy"
+        highlightWord="Policy"
+        subtitle="Official data protection and privacy practices of the Rotaract Club of SLTC."
+        align="left"
+        showDivider={false}
+      />
       <p>
         The Rotaract Club of SLTC is committed to protecting the privacy of its members, partners, and visitors. This policy outlines how we handle data collected through our website.
       </p>

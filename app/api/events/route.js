@@ -30,7 +30,7 @@ export async function GET(request) {
       query.avenue = avenue;
     }
 
-    // Default for public site: ONLY show approved events (also include legacy events without approvalStatus field)
+    // Public filter: approved events only
     if (approvalStatus === "all") {
       // no filter on approvalStatus
     } else if (approvalStatus === "pending") {

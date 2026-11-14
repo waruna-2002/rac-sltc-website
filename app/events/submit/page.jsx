@@ -19,6 +19,7 @@ import {
   X,
   Trash2
 } from "lucide-react";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function SubmitUpcomingEventPage() {
   const avenues = [
@@ -36,9 +37,12 @@ export default function SubmitUpcomingEventPage() {
     title: "",
     subtitle: "",
     avenue: "Community Service Avenue",
-    date: new Date().toISOString().split("T")[0],
-    time: "09:00 AM - 01:00 PM",
-    location: "SLTC Research University, Padukka",
+    secondaryAvenue: "",
+    date: "",
+    endDate: "",
+    isOneDay: true,
+    time: "",
+    location: "",
     description: "",
     image: "",
     submittedBy: "",
@@ -131,20 +135,17 @@ export default function SubmitUpcomingEventPage() {
           <ArrowLeft size={16} />
           <span>Back to Upcoming Events</span>
         </Link>
-        <span className="text-[11px] font-bold text-[#e6007e] uppercase tracking-widest">
-          Event Proposal Portal
-        </span>
       </div>
 
-      {/* Header */}
-      <div>
-        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light sm:font-normal uppercase tracking-[0.14em] text-white">
-          Propose an <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Upcoming Event</span>
-        </h1>
-        <p className="text-slate-300 text-sm mt-3 font-light leading-relaxed max-w-2xl">
-          Have an impactful project, workshop, or community initiative in mind? Submit your proposal for the Rotaract SLTC Executive Board to review and publish to our official calendar.
-        </p>
-      </div>
+      {/* Animated Drop-Down Header */}
+      <AnimatedPageHeader
+        badge="Event Proposal Portal"
+        title="Propose an Upcoming Event"
+        highlightWord="Event"
+        subtitle="Have an impactful project, workshop, or community initiative in mind? Submit your proposal for the Rotaract SLTC Executive Board to review and publish to our official calendar."
+        align="left"
+        showDivider={false}
+      />
 
       {isSuccess ? (
         <div className="p-8 sm:p-12 rounded-3xl bg-[#0c1017] border border-emerald-500/30 text-center space-y-6 shadow-2xl">
@@ -216,7 +217,7 @@ export default function SubmitUpcomingEventPage() {
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-2">
-                Avenue of Service
+                Primary Service Avenue <span className="text-[#e6007e]">*</span>
               </label>
               <select
                 value={form.avenue}
@@ -228,15 +229,55 @@ export default function SubmitUpcomingEventPage() {
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* Date & Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-2">
-                Event Date <span className="text-[#e6007e]">*</span>
+                Secondary Avenue <span className="text-slate-400 font-normal lowercase">(optional)</span>
               </label>
-              <div className="relative">
+              <select
+                value={form.secondaryAvenue || ""}
+                onChange={(e) => setForm({ ...form, secondaryAvenue: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-[#e6007e] outline-none transition-all"
+              >
+                <option value="">None / Not Applicable</option>
+                {avenues.map((ave) => (
+                  <option key={`sec-${ave}`} value={ave}>{ave}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Event Timeline & Duration */}
+          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-white">
+                Event Timeline
+              </span>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.isOneDay}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setForm({
+                      ...form,
+                      isOneDay: checked,
+                      endDate: checked ? "" : form.endDate,
+                    });
+                  }}
+                  className="w-4 h-4 rounded text-[#e6007e] accent-[#e6007e] cursor-pointer"
+                />
+                <span className="text-xs font-medium text-slate-300">
+                  One Day Event
+                </span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-2">
+                  {form.isOneDay ? "Event Date *" : "Start Date *"}
+                </label>
                 <input
                   type="date"
                   required
@@ -245,8 +286,28 @@ export default function SubmitUpcomingEventPage() {
                   className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-sm text-white focus:border-[#e6007e] outline-none transition-all"
                 />
               </div>
-            </div>
 
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-2">
+                  End Date {form.isOneDay && <span className="text-slate-400 font-normal lowercase">(disabled for 1-day event)</span>}
+                </label>
+                <input
+                  type="date"
+                  disabled={form.isOneDay}
+                  value={form.isOneDay ? "" : form.endDate || ""}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm text-white outline-none transition-all ${
+                    form.isOneDay
+                      ? "bg-slate-950/60 border-slate-900 text-slate-400 cursor-not-allowed opacity-50"
+                      : "bg-slate-900 border-slate-800 focus:border-[#e6007e]"
+                  }`}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Time & Location */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-2">
                 Time

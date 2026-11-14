@@ -38,9 +38,21 @@ const EventSchema = new mongoose.Schema(
       ],
       default: "Community Service Avenue",
     },
+    secondaryAvenue: {
+      type: String,
+      default: "",
+    },
     date: {
       type: String,
       required: [true, "Event date is required"],
+    },
+    endDate: {
+      type: String,
+      default: "",
+    },
+    isOneDay: {
+      type: Boolean,
+      default: true,
     },
     time: {
       type: String,

@@ -5,13 +5,14 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { MapPin, Mail, Phone, Send, CheckCircle2 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [site, setSite] = useState({
     address: "SLTC Research University, Ingiriya Road, Padukka, Sri Lanka",
-    email: "rotaract@sltc.ac.lk",
+    email: "rotaractclub@sltc.ac.lk",
     phone: "+94 77 123 4567",
   });
 
@@ -64,18 +65,13 @@ export default function ContactPage() {
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto space-y-12 bg-[#07090e] relative">
-      <div className="text-center max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e6007e]/10 border border-[#e6007e]/30 text-[11px] font-bold tracking-widest text-[#e6007e] uppercase mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#e6007e]" />
-          <span>GET IN TOUCH WITH US</span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-          Contact <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e6007e] via-[#ff4d94] to-cyan-300">Rotaract SLTC</span>
-        </h1>
-        <p className="text-slate-300 text-sm mt-3 font-light leading-relaxed">
-          Have a project collaboration idea, corporate partnership query, or general question? Reach out to our team.
-        </p>
-      </div>
+      {/* Animated Drop-Down Header */}
+      <AnimatedPageHeader
+        badge="Get in Touch with Us"
+        title="Contact Rotaract SLTC"
+        highlightWord="SLTC"
+        subtitle="Have a project collaboration idea, corporate partnership query, or general question? Reach out to our team."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Official Contact Info */}

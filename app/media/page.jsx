@@ -16,6 +16,7 @@ import {
   PenTool
 } from "lucide-react";
 import { getStoredMedia } from "@/lib/mediaStore";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 function MediaContent() {
   const searchParams = useSearchParams();
@@ -53,18 +54,13 @@ function MediaContent() {
 
   return (
     <div className="pt-28 pb-24 px-4 sm:px-6 max-w-7xl mx-auto space-y-12">
-      {/* Hero Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-4">
-        <span className="text-xs font-bold tracking-widest text-[#e6007e] uppercase block">
-          ROTARACT SLTC EDITORIAL & PUBLICATIONS
-        </span>
-        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-          Media & Publications
-        </h1>
-        <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-          Explore student volunteer reflections, official editorial articles, and annual impact reports from Rotaract Club of SLTC.
-        </p>
-
+      {/* Animated Drop-Down Header */}
+      <AnimatedPageHeader
+        badge="Rotaract SLTC Editorial & Publications"
+        title="Media & Publications"
+        highlightWord="Publications"
+        subtitle="Explore student volunteer reflections, official editorial articles, and annual impact reports from Rotaract Club of SLTC."
+      >
         {/* Action & Filter Row */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
           <div className="inline-flex items-center p-1 rounded-2xl bg-slate-900 border border-slate-800">
@@ -122,10 +118,10 @@ function MediaContent() {
             className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-[#e6007e] text-slate-200 text-xs font-bold transition-all flex items-center gap-2"
           >
             <PenTool size={13} className="text-[#e6007e]" />
-            <span>Write a Story</span>
+            <span>Submit a Story</span>
           </Link>
         </div>
-      </div>
+      </AnimatedPageHeader>
 
       {/* --- SECTION 1: BLOGS & STORIES --- */}
       {(activeTab === "all" || activeTab === "blogs") && blogs.length > 0 && (

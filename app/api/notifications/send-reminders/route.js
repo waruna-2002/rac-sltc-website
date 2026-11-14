@@ -113,7 +113,7 @@ export async function POST(request) {
             await transporter.sendMail({
               from: process.env.SMTP_FROM || `"Rotaract Club of SLTC" <${process.env.SMTP_USER}>`,
               to: sub.email,
-              subject: `📅 Reminder: ${ev.title} is happening ${timingLabel}!`,
+              subject: `Reminder: ${ev.title} is happening ${timingLabel}!`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background-color: #0c1017; color: #f1f5f9; border-radius: 16px; border: 1px solid #1e293b;">
                   <div style="text-align: center; margin-bottom: 20px;">
@@ -125,9 +125,9 @@ export async function POST(request) {
                   </div>
 
                   <div style="background-color: #161f2e; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155;">
-                    <p style="margin: 6px 0; font-size: 14px; color: #cbd5e1;">📅 <strong>Date:</strong> ${ev.date} (${timingLabel})</p>
-                    <p style="margin: 6px 0; font-size: 14px; color: #cbd5e1;">⏰ <strong>Time:</strong> ${ev.time || "TBD"}</p>
-                    <p style="margin: 6px 0; font-size: 14px; color: #cbd5e1;">📍 <strong>Location:</strong> ${ev.location}</p>
+                    <p style="margin: 6px 0; font-size: 14px; color: #cbd5e1;"><strong>Date:</strong> ${ev.date} (${timingLabel})</p>
+                    <p style="margin: 6px 0; font-size: 14px; color: #cbd5e1;"><strong>Time:</strong> ${ev.time || "TBD"}</p>
+                    <p style="margin: 6px 0; font-size: 14px; color: #cbd5e1;"><strong>Location:</strong> ${ev.location}</p>
                   </div>
 
                   <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">

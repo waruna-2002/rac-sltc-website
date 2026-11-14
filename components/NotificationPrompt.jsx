@@ -90,7 +90,7 @@ export default function NotificationPrompt() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccessMessage("🔔 Push notifications enabled! A test notification has been sent to your device.");
+        setSuccessMessage("Push notifications enabled! A test notification has been sent to your device.");
         setPushStatus("granted");
       } else {
         setErrorMessage(data.error || "Failed to save push subscription.");
@@ -126,7 +126,7 @@ export default function NotificationPrompt() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccessMessage("📧 Success! You will receive email reminders 1 day prior to upcoming events.");
+        setSuccessMessage("Success! You will receive email reminders 1 day prior to upcoming events.");
         setEmailInput("");
       } else {
         setErrorMessage(data.error || "Failed to register email.");

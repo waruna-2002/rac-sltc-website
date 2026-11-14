@@ -5,7 +5,9 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar } from "lucide-react";
 
-export default function ProjectCard({ title, slug, avenue, date, description, impact, image, onClick }) {
+export default function ProjectCard({ title, slug, avenue, secondaryAvenue, date, endDate, isOneDay, description, impact, image, onClick }) {
+  const displayDate = endDate && !isOneDay && endDate !== date ? `${date} - ${endDate}` : date;
+
   return (
     <motion.div
       onClick={onClick}
@@ -28,15 +30,20 @@ export default function ProjectCard({ title, slug, avenue, date, description, im
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0c1017] via-transparent to-transparent opacity-90" />
         
-        <div className="absolute top-4 left-4">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-[#ff4d94] bg-[#0c1017]/90 px-3 py-1 rounded-full border border-[#e6007e]/40 backdrop-blur-md">
+        <div className="absolute top-4 left-4 flex flex-wrap gap-1.5 max-w-[65%]">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-[#ff4d94] bg-[#0c1017]/90 px-3 py-1 rounded-full border border-[#e6007e]/40 backdrop-blur-md truncate">
             {avenue}
           </span>
+          {secondaryAvenue && (
+            <span className="text-[9px] font-bold tracking-wider uppercase text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-700/50 backdrop-blur-md truncate">
+              {secondaryAvenue.replace(" Avenue", "")}
+            </span>
+          )}
         </div>
 
         <div className="absolute top-4 right-4 bg-[#0c1017]/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-semibold text-slate-300 flex items-center gap-1.5 border border-slate-700/60">
           <Calendar size={11} className="text-[#e6007e]" />
-          <span>{date}</span>
+          <span>{displayDate}</span>
         </div>
       </div>
 

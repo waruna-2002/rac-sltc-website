@@ -26,12 +26,12 @@ export const defaultSiteContent = {
 
   // Contact & Official Info
   address: "SLTC Research University, Ingiriya Road, Padukka, Sri Lanka",
-  email: "rotaract@sltc.ac.lk",
+  email: "rotaractclub@sltc.ac.lk",
   phone: "+94 77 123 4567",
-  facebookUrl: "https://facebook.com",
-  instagramUrl: "https://instagram.com",
-  linkedinUrl: "https://linkedin.com",
-  youtubeUrl: "https://youtube.com",
+  facebookUrl: "https://www.facebook.com/share/19mguwo9sP/",
+  instagramUrl: "https://www.instagram.com/rotaract_sltc?mdxt=dzl0cHJwNGJzejE0",
+  linkedinUrl: "",
+  youtubeUrl: "",
 
   // Media / Newsletter
   newsletterTitle: "Rotaract SLTC Official Quarterly Gazette",

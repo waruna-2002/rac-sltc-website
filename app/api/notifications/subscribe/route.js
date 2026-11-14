@@ -45,7 +45,7 @@ export async function POST(request) {
       if (test) {
         try {
           const payload = JSON.stringify({
-            title: "🔔 Notifications Enabled!",
+            title: "Notifications Enabled!",
             body: "You'll now receive reminder alerts 1 day before upcoming Rotaract SLTC events.",
             url: "/#upcoming-events",
           });
@@ -113,7 +113,7 @@ export async function POST(request) {
                   <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">SLTC Research University, Padukka</p>
                 </div>
                 <div style="background-color: #161f2e; padding: 20px; border-radius: 12px; border: 1px solid #334155;">
-                  <h3 style="color: #38bdf8; margin-top: 0;">🎉 Event Reminders Activated!</h3>
+                  <h3 style="color: #38bdf8; margin-top: 0;">Event Reminders Activated!</h3>
                   <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1;">
                     You are now subscribed to receive email notifications <strong>1 day prior</strong> to all upcoming Rotaract events, community drives, and university initiatives.
                   </p>

@@ -43,16 +43,25 @@ export default function SingleProjectPage() {
       </Link>
 
       <div className="space-y-4">
-        <span className="text-xs font-bold tracking-widest uppercase text-[#e6007e] bg-[#e6007e]/10 px-3 py-1 rounded-md">
-          {project.avenue}
-        </span>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-bold tracking-widest uppercase text-[#e6007e] bg-[#e6007e]/10 px-3 py-1 rounded-md">
+            {project.avenue}
+          </span>
+          {project.secondaryAvenue && (
+            <span className="text-xs font-bold tracking-widest uppercase text-cyan-400 bg-cyan-950/80 px-3 py-1 rounded-md border border-cyan-800/50">
+              Co-Avenue: {project.secondaryAvenue}
+            </span>
+          )}
+        </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-white leading-tight">
           {project.title}
         </h1>
         <div className="flex flex-wrap gap-4 text-xs text-slate-400 pt-2 border-b border-slate-800 pb-6">
           <span className="flex items-center gap-1.5">
             <Calendar size={14} className="text-[#e6007e]" />
-            {project.date}
+            {project.endDate && !project.isOneDay && project.endDate !== project.date
+              ? `${project.date} - ${project.endDate}`
+              : project.date}
           </span>
           <span className="flex items-center gap-1.5">
             <Tag size={14} className="text-[#e6007e]" />

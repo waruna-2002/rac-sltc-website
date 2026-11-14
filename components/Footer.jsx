@@ -41,12 +41,12 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [site, setSite] = useState({
     address: "SLTC Research University, Ingiriya Road, Padukka, Sri Lanka",
-    email: "rotaract@sltc.ac.lk",
+    email: "rotaractclub@sltc.ac.lk",
     phone: "+94 77 123 4567",
-    facebookUrl: "https://facebook.com",
-    instagramUrl: "https://instagram.com",
-    linkedinUrl: "https://linkedin.com",
-    youtubeUrl: "https://youtube.com",
+    facebookUrl: "https://www.facebook.com/share/19mguwo9sP/",
+    instagramUrl: "https://www.instagram.com/rotaract_sltc?mdxt=dzl0cHJwNGJzejE0",
+    linkedinUrl: "",
+    youtubeUrl: "",
   });
 
   useEffect(() => {
@@ -88,12 +88,35 @@ export default function Footer() {
     { name: "JOIN US", href: "/join-us" },
   ];
 
+  // Helper to validate whether a custom social URL was actually provided by admin
+  const isValidSocialUrl = (url, genericPattern = "") => {
+    if (!url || typeof url !== "string") return false;
+    const clean = url.trim().toLowerCase();
+    if (!clean.startsWith("http")) return false;
+    if (clean === "#" || clean === "https://#" || clean.endsWith(".com") || clean.endsWith(".com/")) {
+      if (genericPattern && clean.includes(genericPattern)) return false;
+    }
+    return true;
+  };
+
+  // Only show social platforms with active links (LinkedIn only if explicitly added by admin; YouTube removed)
   const socialItems = [
-    { component: <Icons.Facebook />, href: site.facebookUrl, label: "Facebook" },
-    { component: <Icons.Instagram />, href: site.instagramUrl, label: "Instagram" },
-    { component: <Icons.LinkedIn />, href: site.linkedinUrl, label: "LinkedIn" },
-    { component: <Icons.YouTube />, href: site.youtubeUrl, label: "YouTube" },
-  ];
+    isValidSocialUrl(site.facebookUrl, "facebook.com") && {
+      component: <Icons.Facebook />,
+      href: site.facebookUrl,
+      label: "Facebook",
+    },
+    isValidSocialUrl(site.instagramUrl, "instagram.com") && {
+      component: <Icons.Instagram />,
+      href: site.instagramUrl,
+      label: "Instagram",
+    },
+    isValidSocialUrl(site.linkedinUrl, "linkedin.com") && {
+      component: <Icons.LinkedIn />,
+      href: site.linkedinUrl,
+      label: "LinkedIn",
+    },
+  ].filter(Boolean);
 
   return (
     <footer className="relative bg-[#07070a] text-slate-300 pt-16 pb-8 overflow-hidden border-t border-slate-800/60 mt-16">

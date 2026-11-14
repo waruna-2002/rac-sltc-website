@@ -4,28 +4,20 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Monitor, 
-  Smartphone, 
   Edit3, 
   Check, 
   Upload, 
-  Save, 
-  ExternalLink, 
   ChevronLeft, 
-  Layers, 
   Type, 
   Image as ImageIcon, 
   BarChart3, 
-  Compass, 
   Users, 
   Mail, 
   Phone, 
   MapPin, 
   Calendar, 
-  Sparkles,
   Info,
-  Globe,
-  Share2
+  Globe
 } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -120,9 +112,8 @@ export default function VisualSiteCustomizer({
       <div className="p-4 rounded-3xl bg-[#0c1017] border border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-xl">
         {/* Left: Page Switcher */}
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1.5">
-            <Layers size={14} className="text-[#e6007e]" />
-            <span>Editing Page:</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+            Editing Page:
           </span>
           <div className="flex p-1 rounded-2xl bg-slate-900 border border-slate-800">
             <button
@@ -166,28 +157,26 @@ export default function VisualSiteCustomizer({
           <button
             type="button"
             onClick={() => setViewport("desktop")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewport === "desktop"
                 ? "bg-slate-800 text-white shadow"
                 : "text-slate-400 hover:text-white"
             }`}
             title="Desktop View (100% full width)"
           >
-            <Monitor size={14} />
-            <span className="hidden sm:inline">Desktop</span>
+            Desktop
           </button>
           <button
             type="button"
             onClick={() => setViewport("mobile")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               viewport === "mobile"
                 ? "bg-slate-800 text-white shadow"
                 : "text-slate-400 hover:text-white"
             }`}
             title="Mobile View (390px phone container)"
           >
-            <Smartphone size={14} />
-            <span className="hidden sm:inline">Mobile (390px)</span>
+            Mobile (390px)
           </button>
         </div>
 
@@ -203,19 +192,17 @@ export default function VisualSiteCustomizer({
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 transition-all"
+            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white transition-all"
             title="Open Live Public Site in new tab"
           >
-            <ExternalLink size={14} />
-            <span className="hidden md:inline">View Live Site</span>
+            View Live Site
           </a>
           <button
             type="button"
             onClick={handlePublish}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#e6007e] to-[#ff2a9d] hover:brightness-110 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-[#e6007e]/30 flex items-center gap-1.5 cursor-pointer transition-all"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#e6007e] to-[#ff2a9d] hover:brightness-110 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-[#e6007e]/30 cursor-pointer transition-all"
           >
-            <Save size={14} />
-            <span>Save &amp; Publish</span>
+            Save &amp; Publish
           </button>
         </div>
       </div>
@@ -240,86 +227,46 @@ export default function VisualSiteCustomizer({
                   <button
                     type="button"
                     onClick={() => setActiveSection("hero")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e6007e]/10 text-[#e6007e] flex items-center justify-center">
-                        <Sparkles size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-[#ff66ab]">Hero Banner</h4>
-                        <span className="text-[10px] text-slate-400">Headline, Tagline &amp; Badge</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-[#ff66ab]">Hero Banner</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Headline, Tagline &amp; Badge</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setActiveSection("who_we_are")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
-                        <Users size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-purple-300">Who We Are</h4>
-                        <span className="text-[10px] text-slate-400">Heading &amp; Organization Story</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-purple-300">Who We Are</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Heading &amp; Organization Story</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setActiveSection("mission")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
-                        <Compass size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-cyan-300">Mission &amp; Vision</h4>
-                        <span className="text-[10px] text-slate-400">Statements of Purpose</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-cyan-300">Mission &amp; Vision</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Statements of Purpose</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setActiveSection("stats")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                        <BarChart3 size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">Impact Stats Counter</h4>
-                        <span className="text-[10px] text-slate-400">{stats.length} live statistics</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">Impact Stats Counter</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">{stats.length} live statistics</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setActiveSection("avenues")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                        <Globe size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-amber-300">8 Avenues of Service</h4>
-                        <span className="text-[10px] text-slate-400">Titles &amp; Descriptions</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-amber-300">8 Avenues of Service</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Titles &amp; Descriptions</span>
                   </button>
                 </div>
               )}
@@ -329,35 +276,19 @@ export default function VisualSiteCustomizer({
                   <button
                     type="button"
                     onClick={() => setActiveSection("about_story")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#e6007e]/10 text-[#e6007e] flex items-center justify-center">
-                        <Info size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-[#ff66ab]">Our Story &amp; Charter</h4>
-                        <span className="text-[10px] text-slate-400">History, Year, Parent Rotary</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-[#ff66ab]">Our Story &amp; Charter</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">History, Year, Parent Rotary</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setActiveSection("mission")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
-                        <Compass size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-cyan-300">Mission &amp; Vision</h4>
-                        <span className="text-[10px] text-slate-400">Statements of Purpose</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-cyan-300">Mission &amp; Vision</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Statements of Purpose</span>
                   </button>
                 </div>
               )}
@@ -367,18 +298,10 @@ export default function VisualSiteCustomizer({
                   <button
                     type="button"
                     onClick={() => setActiveSection("contact")}
-                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-[#e6007e] text-left transition-all group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                        <Mail size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">Coordinates &amp; Socials</h4>
-                        <span className="text-[10px] text-slate-400">Email, Phone, Campus, Socials</span>
-                      </div>
-                    </div>
-                    <Edit3 size={14} className="text-slate-500 group-hover:text-white" />
+                    <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">Coordinates &amp; Socials</h4>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Email, Phone, Campus, Socials</span>
                   </button>
                 </div>
               )}
@@ -859,7 +782,7 @@ export default function VisualSiteCustomizer({
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0c1017]/80 via-transparent to-transparent flex items-end p-2.5">
                           <span className="text-[9px] font-bold text-white bg-black/60 px-2 py-0.5 rounded-full backdrop-blur border border-white/20">
-                            📸 Club Group Photo
+                            Club Group Photo
                           </span>
                         </div>
                       </div>

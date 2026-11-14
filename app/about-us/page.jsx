@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Target, Eye, Award, CheckCircle, Building2, Globe2 } from "lucide-react";
 import { getStoredSiteContent } from "@/lib/siteStore";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function AboutUsPage() {
   const [site, setSite] = useState({
@@ -38,18 +39,13 @@ export default function AboutUsPage() {
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16 bg-[#07090e] relative">
-      {/* Header */}
-      <div className="text-center max-w-3xl mx-auto">
-        <p className="text-xs font-bold tracking-[0.2em] text-[#e6007e] uppercase mb-3">
-          About Our Club
-        </p>
-        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
-          Legacy of <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Service</span>
-        </h1>
-        <p className="text-slate-300 text-sm sm:text-base mt-3 font-light leading-relaxed">
-          Empowering undergraduates at SLTC Research University to lead, innovate, and transform communities across Sri Lanka.
-        </p>
-      </div>
+      {/* Animated Drop-Down Header */}
+      <AnimatedPageHeader
+        badge="About Our Club"
+        title="Legacy of Service"
+        highlightWord="Service"
+        subtitle="Empowering undergraduates at SLTC Research University to lead, innovate, and transform communities across Sri Lanka."
+      />
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

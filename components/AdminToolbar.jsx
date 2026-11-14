@@ -59,7 +59,7 @@ export default function AdminToolbar() {
           {isSuperAdmin ? "MASTER ADMIN ACTIVE" : "PROJECT EDITOR ACTIVE"}
         </span>
         <span className="hidden md:inline-block text-[11px] font-normal text-white/90 bg-black/25 px-2 py-0.5 rounded-md">
-          {editMode ? "✏️ In-Page Edit Badges Visible" : "👁️ Clean Normal Preview Mode"}
+          {editMode ? "In-Page Edit Badges Visible" : "Clean Normal Preview Mode"}
         </span>
       </div>
 

@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { addMediaPost } from "@/lib/mediaStore";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function SubmitMediaStoryPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -95,18 +96,15 @@ export default function SubmitMediaStoryPage() {
         <span>Back to Media Hub</span>
       </Link>
 
-      {/* Header */}
-      <div className="space-y-2">
-        <span className="text-xs font-bold tracking-widest text-[#e6007e] uppercase block">
-          COMMUNITY CONTRIBUTIONS
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-          Submit a Blog or Article
-        </h1>
-        <p className="text-slate-400 text-sm leading-relaxed">
-          Share your volunteer journey, project behind-the-scenes, or an educational editorial with the Rotaract SLTC community.
-        </p>
-      </div>
+      {/* Animated Drop-Down Header */}
+      <AnimatedPageHeader
+        badge="Community Contributions"
+        title="Submit a Story"
+        highlightWord="Story"
+        subtitle="Share your volunteer journey, project behind-the-scenes, or an educational editorial with the Rotaract SLTC community."
+        align="left"
+        showDivider={false}
+      />
 
       {submitted ? (
         <div className="p-8 sm:p-12 rounded-3xl bg-[#0c1017] border border-emerald-500/40 text-center space-y-5 shadow-2xl">

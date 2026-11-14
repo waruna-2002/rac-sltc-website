@@ -71,12 +71,21 @@ export default function ProjectModal({ project, onClose }) {
             <div className="absolute inset-0 bg-gradient-to-t from-[#0c1017] via-[#0c1017]/40 to-transparent" />
 
             <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between flex-wrap gap-2 z-10">
-              <span className="text-xs font-bold tracking-widest uppercase text-[#ff4d94] bg-[#0c1017]/90 px-3 py-1 rounded-full border border-[#e6007e]/40 backdrop-blur-md">
-                {project.avenue}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold tracking-widest uppercase text-[#ff4d94] bg-[#0c1017]/90 px-3 py-1 rounded-full border border-[#e6007e]/40 backdrop-blur-md">
+                  {project.avenue}
+                </span>
+                {project.secondaryAvenue && (
+                  <span className="text-xs font-bold tracking-widest uppercase text-cyan-400 bg-cyan-950/90 px-3 py-1 rounded-full border border-cyan-700/50 backdrop-blur-md">
+                    {project.secondaryAvenue}
+                  </span>
+                )}
+              </div>
               <span className="text-xs text-slate-300 flex items-center gap-1.5 bg-[#0c1017]/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-700/60 font-semibold">
                 <Calendar size={13} className="text-[#e6007e]" />
-                {project.date}
+                {project.endDate && !project.isOneDay && project.endDate !== project.date 
+                  ? `${project.date} - ${project.endDate}` 
+                  : project.date}
               </span>
             </div>
           </div>

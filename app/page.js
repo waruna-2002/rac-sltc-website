@@ -131,6 +131,7 @@ export default function HomePage() {
                 src={siteContent.whoWeAreImage || "/images/hero.jpg"}
                 alt="SLTC Rotaract Youth Leaders"
                 fill
+                priority
                 unoptimized
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
               />

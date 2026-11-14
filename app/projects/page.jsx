@@ -6,6 +6,7 @@ import ProjectModal from "@/components/ProjectModal";
 import { getStoredProjects } from "@/lib/projectsStore";
 import Link from "next/link";
 import { Search, PlusCircle } from "lucide-react";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
@@ -63,17 +64,15 @@ export default function ProjectsPage() {
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 bg-[#07090e]">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="text-center md:text-left max-w-2xl">
-          <p className="text-xs font-bold tracking-[0.2em] text-[#e6007e] uppercase mb-3">
-            Portfolio of Impact
-          </p>
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light sm:font-normal tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white leading-tight">
-            Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff66ab] to-[#e6007e]">Projects</span>
-          </h1>
-          <p className="text-slate-300 text-sm sm:text-base mt-3 font-light leading-relaxed">
-            Explore the high-impact initiatives and activities conducted across our service avenues. Click on any project card for instant details.
-          </p>
-        </div>
+        <AnimatedPageHeader
+          badge="Portfolio of Impact"
+          title="Our Projects"
+          highlightWord="Projects"
+          subtitle="Explore the high-impact initiatives and activities conducted across our service avenues. Click on any project card for instant details."
+          align="left"
+          showDivider={false}
+          className="max-w-2xl"
+        />
 
         <Link
           href="/projects/submit"

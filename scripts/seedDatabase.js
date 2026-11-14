@@ -20,19 +20,19 @@ const DEFAULT_ADMIN_EMAIL = "rotaractsltc@gmail.com";
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  console.error("❌ MONGODB_URI is not defined in .env.local!");
+  console.error("[Error] MONGODB_URI is not defined in .env.local!");
   process.exit(1);
 }
 
 async function seedDatabase() {
   console.log("\n=======================================================");
-  console.log("🚀 ROTARACT CLUB OF SLTC - MONGODB ATLAS SEEDER");
+  console.log("ROTARACT CLUB OF SLTC - MONGODB ATLAS SEEDER");
   console.log("=======================================================");
   console.log(`Connecting to: ${MONGODB_URI.replace(/:([^:@]{3,})@/, ":***@")}`);
 
   try {
     await mongoose.connect(MONGODB_URI);
-    console.log("✅ Successfully connected to MongoDB Atlas!\n");
+    console.log("[Success] Successfully connected to MongoDB Atlas!\n");
 
     // 1. Seed Admin User
     const adminEmail = (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL || "rotaractsltc@gmail.com").toLowerCase().trim();
@@ -48,9 +48,9 @@ async function seedDatabase() {
         passwordSalt: salt,
         trustedDevices: [],
       });
-      console.log(`👤 Master Admin created: ${adminEmail}`);
+      console.log(`[Admin] Master Admin created: ${adminEmail}`);
     } else {
-      console.log(`👤 Master Admin already exists: ${adminEmail}`);
+      console.log(`[Admin] Master Admin already exists: ${adminEmail}`);
     }
 
     // 2. Seed Projects from projects.json
@@ -79,7 +79,7 @@ async function seedDatabase() {
           projectCount++;
         }
       }
-      console.log(`📁 Projects seeded: ${projectCount} new (Total catalog: ${projectsData.length})`);
+      console.log(`[Projects] Projects seeded: ${projectCount} new (Total catalog: ${projectsData.length})`);
     }
 
     // 3. Seed Media from media.json
@@ -109,7 +109,7 @@ async function seedDatabase() {
           mediaCount++;
         }
       }
-      console.log(`📰 Media & Articles seeded: ${mediaCount} new (Total: ${mediaData.length})`);
+      console.log(`[Media] Media & Articles seeded: ${mediaCount} new (Total: ${mediaData.length})`);
     }
 
     // 4. Seed Site Settings (Hero, About, Mission, Vision, Contact)
@@ -143,14 +143,14 @@ async function seedDatabase() {
         settingCount++;
       }
     }
-    console.log(`🌐 Site CMS Settings seeded: ${settingCount} initialized`);
+    console.log(`[Settings] Site CMS Settings seeded: ${settingCount} initialized`);
 
     console.log("\n=======================================================");
-    console.log("🎉 ALL SEEDING TASKS COMPLETED SUCCESSFULLY!");
+    console.log("[Completed] ALL SEEDING TASKS COMPLETED SUCCESSFULLY!");
     console.log("=======================================================\n");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Seeding failed with error:", err);
+    console.error("[Error] Seeding failed with error:", err);
     process.exit(1);
   }
 }

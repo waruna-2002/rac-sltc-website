@@ -19,6 +19,7 @@ import {
   AlertCircle,
   FileCheck
 } from "lucide-react";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function JoinUsPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -164,18 +165,13 @@ export default function JoinUsPage() {
 
   return (
     <div className="pt-28 pb-24 px-4 sm:px-6 max-w-4xl mx-auto space-y-10">
-      {/* Header Banner */}
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <span className="text-xs font-bold tracking-widest text-[#e6007e] uppercase block">
-          MEMBERSHIP REGISTRATION 2026/27
-        </span>
-        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-          Join Rotaract Club of SLTC
-        </h1>
-        <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-          Embark on an inspiring journey of youth leadership, professional networking, and impactful community service.
-        </p>
-      </div>
+      {/* Animated Drop-Down Header */}
+      <AnimatedPageHeader
+        badge="Membership Registration 2026/27"
+        title="Join Rotaract SLTC"
+        highlightWord="SLTC"
+        subtitle="Embark on an inspiring journey of youth leadership, professional networking, and impactful community service."
+      />
 
       {submitted ? (
         <div className="p-8 sm:p-12 rounded-3xl bg-[#0c1017] border border-emerald-500/40 text-center space-y-6 shadow-2xl">

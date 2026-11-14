@@ -37,9 +37,21 @@ const ProjectSchema = new mongoose.Schema(
       ],
       default: "Community Service Avenue",
     },
+    secondaryAvenue: {
+      type: String,
+      default: "",
+    },
     date: {
       type: String,
       default: () => new Date().toISOString().split("T")[0],
+    },
+    endDate: {
+      type: String,
+      default: "",
+    },
+    isOneDay: {
+      type: Boolean,
+      default: true,
     },
     impact: {
       type: String,

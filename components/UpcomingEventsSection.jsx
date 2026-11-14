@@ -24,6 +24,7 @@ import {
 import EventCalendar from "@/components/EventCalendar";
 import NotificationPrompt from "@/components/NotificationPrompt";
 import { getGoogleCalendarUrl } from "@/lib/calendarUtils";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function UpcomingEventsSection() {
   const [events, setEvents] = useState([]);
@@ -43,9 +44,12 @@ export default function UpcomingEventsSection() {
     title: "",
     subtitle: "",
     avenue: "Community Service Avenue",
-    date: new Date().toISOString().split("T")[0],
-    time: "09:00 AM - 01:00 PM",
-    location: "SLTC Research University, Padukka",
+    secondaryAvenue: "",
+    date: "",
+    endDate: "",
+    isOneDay: true,
+    time: "",
+    location: "",
     description: "",
     image: "",
     submittedBy: "",
@@ -214,17 +218,15 @@ export default function UpcomingEventsSection() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4 relative z-10">
-        <div>
-          <p className="text-xs font-bold tracking-[0.2em] text-[#e6007e] uppercase mb-3">
-            What&apos;s Happening
-          </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-            Upcoming <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e6007e] via-[#ff4d94] to-cyan-300">Events &amp; Initiatives</span>
-          </h2>
-          <p className="text-slate-400 text-sm sm:text-base mt-2 font-light max-w-xl">
-            Stay plugged into our upcoming community projects, leadership summits, and university campus drives.
-          </p>
-        </div>
+        <AnimatedPageHeader
+          badge="What's Happening"
+          title="Upcoming Events"
+          highlightWord="Events"
+          subtitle="Stay plugged into our upcoming community projects, leadership summits, and university campus drives."
+          align="left"
+          showDivider={false}
+          className="max-w-xl"
+        />
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
           <button
@@ -367,9 +369,16 @@ export default function UpcomingEventsSection() {
                     </div>
 
                     {/* Avenue Badge */}
-                    <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-[#e6007e]/90 text-white text-[10px] font-black tracking-wider uppercase backdrop-blur-md shadow-md">
-                      {ev.avenue?.replace(/&amp;/gi, "&")}
-                    </span>
+                    <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
+                      <span className="px-3 py-1 rounded-full bg-[#e6007e]/90 text-white text-[10px] font-black tracking-wider uppercase backdrop-blur-md shadow-md">
+                        {ev.avenue?.replace(/&amp;/gi, "&")}
+                      </span>
+                      {ev.secondaryAvenue && (
+                        <span className="px-2 py-0.5 rounded-full bg-cyan-950/90 text-cyan-300 border border-cyan-700/50 text-[9px] font-bold tracking-wider uppercase backdrop-blur-md shadow-md">
+                          {ev.secondaryAvenue.replace(" Avenue", "")}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Body Content */}
@@ -457,9 +466,16 @@ export default function UpcomingEventsSection() {
                     <span className="text-sm font-bold text-slate-300">{activeModalEvent.title}</span>
                   </div>
                 )}
-                <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#e6007e] text-white text-xs font-black tracking-wider uppercase">
-                  {activeModalEvent.avenue?.replace(/&amp;/gi, "&")}
-                </span>
+                <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
+                  <span className="px-3 py-1 rounded-full bg-[#e6007e] text-white text-xs font-black tracking-wider uppercase">
+                    {activeModalEvent.avenue?.replace(/&amp;/gi, "&")}
+                  </span>
+                  {activeModalEvent.secondaryAvenue && (
+                    <span className="px-2.5 py-1 rounded-full bg-cyan-950/90 text-cyan-300 border border-cyan-700/50 text-xs font-bold tracking-wider uppercase">
+                      {activeModalEvent.secondaryAvenue?.replace(/&amp;/gi, "&")}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -474,7 +490,14 @@ export default function UpcomingEventsSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300">
                 <div className="flex items-center gap-2.5">
                   <Calendar size={15} className="text-[#e6007e]" />
-                  <span>Date: <strong>{activeModalEvent.date}</strong></span>
+                  <span>
+                    Date:{" "}
+                    <strong>
+                      {activeModalEvent.endDate && !activeModalEvent.isOneDay && activeModalEvent.endDate !== activeModalEvent.date
+                        ? `${activeModalEvent.date} to ${activeModalEvent.endDate}`
+                        : activeModalEvent.date}
+                    </strong>
+                  </span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Clock size={15} className="text-[#e6007e]" />
@@ -625,7 +648,7 @@ export default function UpcomingEventsSection() {
 
                     <div>
                       <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
-                        Avenue of Service
+                        Primary Service Avenue
                       </label>
                       <select
                         value={proposeForm.avenue}
@@ -639,32 +662,92 @@ export default function UpcomingEventsSection() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
-                        Event Date <span className="text-[#e6007e]">*</span>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                      Secondary Avenue <span className="text-slate-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <select
+                      value={proposeForm.secondaryAvenue || ""}
+                      onChange={(e) => setProposeForm({ ...proposeForm, secondaryAvenue: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
+                    >
+                      <option value="">None / Not Applicable</option>
+                      {avenues.filter(a => a !== "All").map((ave) => (
+                        <option key={`sec-${ave}`} value={ave}>{ave}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Event Timeline & Duration */}
+                  <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-white">
+                        Event Timeline
+                      </span>
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={proposeForm.isOneDay}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setProposeForm({
+                              ...proposeForm,
+                              isOneDay: checked,
+                              endDate: checked ? "" : proposeForm.endDate,
+                            });
+                          }}
+                          className="w-4 h-4 rounded text-[#e6007e] accent-[#e6007e] cursor-pointer"
+                        />
+                        <span className="text-xs font-medium text-slate-300">
+                          One Day Event
+                        </span>
                       </label>
-                      <input
-                        type="date"
-                        required
-                        value={proposeForm.date}
-                        onChange={(e) => setProposeForm({ ...proposeForm, date: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
-                      />
                     </div>
 
-                    <div>
-                      <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
-                        Time
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 09:00 AM - 04:30 PM"
-                        value={proposeForm.time}
-                        onChange={(e) => setProposeForm({ ...proposeForm, time: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:border-[#e6007e] outline-none"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                          {proposeForm.isOneDay ? "Event Date *" : "Start Date *"}
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={proposeForm.date}
+                          onChange={(e) => setProposeForm({ ...proposeForm, date: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                          End Date {proposeForm.isOneDay && <span className="text-slate-400 font-normal lowercase">(disabled for 1-day event)</span>}
+                        </label>
+                        <input
+                          type="date"
+                          disabled={proposeForm.isOneDay}
+                          value={proposeForm.isOneDay ? "" : proposeForm.endDate || ""}
+                          onChange={(e) => setProposeForm({ ...proposeForm, endDate: e.target.value })}
+                          className={`w-full px-4 py-2.5 rounded-xl border text-xs text-white outline-none transition-all ${
+                            proposeForm.isOneDay
+                              ? "bg-slate-950/60 border-slate-900 text-slate-400 cursor-not-allowed opacity-50"
+                              : "bg-slate-900 border-slate-800 focus:border-[#e6007e]"
+                          }`}
+                        />
+                      </div>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                      Time
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 09:00 AM - 04:30 PM"
+                      value={proposeForm.time}
+                      onChange={(e) => setProposeForm({ ...proposeForm, time: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:border-[#e6007e] outline-none"
+                    />
                   </div>
 
                   <div>

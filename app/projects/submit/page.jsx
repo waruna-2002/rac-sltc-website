@@ -19,6 +19,7 @@ import {
   Trash2, 
   AlertCircle 
 } from "lucide-react";
+import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 export default function SubmitProjectPage() {
   const [activeTab, setActiveTab] = useState("submit");
@@ -32,8 +33,11 @@ export default function SubmitProjectPage() {
   const initialFormState = {
     title: "",
     avenue: "Community Service Avenue",
-    date: new Date().toISOString().split("T")[0],
-    impact: "100+ Participants",
+    secondaryAvenue: "",
+    date: "",
+    endDate: "",
+    isOneDay: true,
+    impact: "",
     description: "",
     image: "",
     images: [],
@@ -170,8 +174,11 @@ export default function SubmitProjectPage() {
     setFormData({
       title: proj.title || "",
       avenue: proj.avenue || "Community Service Avenue",
-      date: proj.date || new Date().toISOString().split("T")[0],
-      impact: proj.impact || "100+ Participants",
+      secondaryAvenue: proj.secondaryAvenue || "",
+      date: proj.date || "",
+      endDate: proj.endDate || "",
+      isOneDay: proj.isOneDay !== undefined ? proj.isOneDay : !proj.endDate,
+      impact: proj.impact || "",
       description: proj.description || "",
       image: proj.image || (proj.images && proj.images[0]) || "",
       images: (proj.images && proj.images.length > 0) ? proj.images.slice(0, 3) : (proj.image ? [proj.image] : []),
@@ -226,19 +233,17 @@ export default function SubmitProjectPage() {
         </div>
       </div>
 
-      {/* Header Title */}
-      <div className="text-center max-w-2xl mx-auto">
-        <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-          {activeTab === "submit" 
-            ? (editingProject ? "Edit Your Project" : "Submit a Project") 
-            : "Track My Submissions"}
-        </h1>
-        <p className="text-slate-300 text-sm mt-3 font-light leading-relaxed">
-          {activeTab === "submit"
-            ? "Upload 1 to 3 showcase photos for the website, provide the Google Drive folder link for all event photos/videos, and fill in the project committee details."
-            : "Check status of your submitted projects or update details anytime."}
-        </p>
-      </div>
+      {/* Animated Drop-Down Header */}
+      <AnimatedPageHeader
+        badge={activeTab === "submit" ? "PROJECT PORTAL" : "MY SUBMISSIONS"}
+        title={activeTab === "submit" 
+          ? (editingProject ? "Edit Your Project" : "Submit a Project") 
+          : "Track My Submissions"}
+        highlightWord={activeTab === "submit" ? "Project" : "Submissions"}
+        subtitle={activeTab === "submit"
+          ? "Upload 1 to 3 showcase photos for the website, provide the Google Drive folder link for all event photos/videos, and fill in the project committee details."
+          : "Check status of your submitted projects or update details anytime."}
+      />
 
       {/* TAB 1: SUBMIT FORM */}
       {activeTab === "submit" && (
@@ -281,18 +286,18 @@ export default function SubmitProjectPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Input
-                  label="Project Title"
-                  required
-                  placeholder="e.g. Neth Peheli - Book Drive"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                />
+              <Input
+                label="Project Title"
+                required
+                placeholder="e.g. Neth Peheli - Book Drive"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              />
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
-                    Service Avenue
+                    Primary Service Avenue *
                   </label>
                   <select
                     value={formData.avenue}
@@ -309,17 +314,84 @@ export default function SubmitProjectPage() {
                     <option value="Environmental Service Avenue">Environmental Service Avenue</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
+                    Secondary Avenue <span className="text-slate-400 font-normal lowercase">(optional)</span>
+                  </label>
+                  <select
+                    value={formData.secondaryAvenue || ""}
+                    onChange={(e) => setFormData({ ...formData, secondaryAvenue: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:border-[#e6007e] outline-none"
+                  >
+                    <option value="">None / Not Applicable</option>
+                    <option value="Community Service Avenue">Community Service Avenue</option>
+                    <option value="Club Service Avenue">Club Service Avenue</option>
+                    <option value="Professional Development Avenue">Professional Development Avenue</option>
+                    <option value="Membership Development Avenue">Membership Development Avenue</option>
+                    <option value="International Service Avenue">International Service Avenue</option>
+                    <option value="Public Relations and Public Image">Public Relations and Public Image</option>
+                    <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
+                    <option value="Environmental Service Avenue">Environmental Service Avenue</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <Input
-                  label="Project Date"
-                  type="date"
-                  required
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                />
+              {/* Project Date & Duration Timeline */}
+              <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">
+                    Project Timeline
+                  </span>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.isOneDay}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData({
+                          ...formData,
+                          isOneDay: checked,
+                          endDate: checked ? "" : formData.endDate,
+                        });
+                      }}
+                      className="w-4 h-4 rounded text-[#e6007e] accent-[#e6007e] cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-slate-300">
+                      One Day Project
+                    </span>
+                  </label>
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label={formData.isOneDay ? "Project Date *" : "Start Date *"}
+                    type="date"
+                    required
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  />
+
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">
+                      End Date {formData.isOneDay && <span className="text-slate-400 font-normal lowercase">(disabled for 1-day project)</span>}
+                    </label>
+                    <input
+                      type="date"
+                      disabled={formData.isOneDay}
+                      value={formData.isOneDay ? "" : formData.endDate || ""}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs text-white outline-none transition-all ${
+                        formData.isOneDay
+                          ? "bg-slate-950/60 border-slate-900 text-slate-400 cursor-not-allowed opacity-50"
+                          : "bg-slate-900 border-slate-800 focus:border-[#e6007e]"
+                      }`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Input
                   label="Impact Metric"
                   required
