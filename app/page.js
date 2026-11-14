@@ -20,6 +20,11 @@ export default function HomePage() {
   const [projectsList, setProjectsList] = useState([]);
   const [avenuesList, setAvenuesList] = useState([]);
   const [siteContent, setSiteContent] = useState({});
+  const [whoWeAreImgError, setWhoWeAreImgError] = useState(false);
+
+  useEffect(() => {
+    setWhoWeAreImgError(false);
+  }, [siteContent.whoWeAreImage]);
 
   useEffect(() => {
     // 1. Initial cached / stored data
@@ -126,16 +131,39 @@ export default function HomePage() {
             className="lg:col-span-6 relative group"
           >
             <div className="absolute -inset-1 bg-[#e6007e]/10 rounded-2xl blur-md transition duration-500" />
-            <div className="relative h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900">
-              <Image
-                src={siteContent.whoWeAreImage || "/images/hero.jpg"}
-                alt="SLTC Rotaract Youth Leaders"
-                fill
-                priority
-                unoptimized
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0c1017]/80 via-transparent to-transparent" />
+            <div className="relative h-80 sm:h-96 rounded-2xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900 flex items-center justify-center">
+              {(!siteContent.whoWeAreImage || whoWeAreImgError) ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-[#0c1017] via-[#161f30] to-[#0c1017] text-center select-none">
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 mb-3 filter drop-shadow-[0_0_25px_rgba(230,0,126,0.3)]">
+                    <Image
+                      src="/images/rotaract-sltc-clean-logo.png"
+                      alt="Rotaract Club of SLTC"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <span className="text-[11px] uppercase tracking-widest text-[#e6007e] font-bold mb-1">
+                    Rotaract District 3220
+                  </span>
+                  <h3 className="text-base sm:text-lg font-serif text-white tracking-wider">
+                    Rotaract Club of SLTC
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xs font-light">
+                    Empowering Leaders &bull; Transforming Communities
+                  </p>
+                </div>
+              ) : (
+                <Image
+                  src={siteContent.whoWeAreImage}
+                  alt="SLTC Rotaract Youth Leaders"
+                  fill
+                  priority
+                  unoptimized
+                  onError={() => setWhoWeAreImgError(true)}
+                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0c1017]/80 via-transparent to-transparent pointer-events-none" />
             </div>
           </motion.div>
         </div>
