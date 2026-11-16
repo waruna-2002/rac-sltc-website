@@ -313,7 +313,7 @@ function AdminDashboardInner() {
     setAvenues(getStoredAvenues());
 
     // Fetch live site settings from MongoDB API
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {
@@ -904,10 +904,18 @@ function AdminDashboardInner() {
     const updated = saveStoredSiteContent(payload);
     setSiteContent(updated);
     if (avenues && avenues.length > 0) {
-      saveStoredAvenues(avenues);
+      try {
+        localStorage.setItem("rotaract_sltc_avenues_v2", JSON.stringify(avenues));
+      } catch (err) {
+        console.error("Local storage error:", err);
+      }
     }
     if (stats && stats.length > 0) {
-      saveStoredStats(stats);
+      try {
+        localStorage.setItem("rotaract_sltc_stats_v1", JSON.stringify(stats));
+      } catch (err) {
+        console.error("Local storage error:", err);
+      }
     }
     showToast("Website Global Content saved & synchronized to MongoDB Atlas!", "success");
   };

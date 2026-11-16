@@ -50,7 +50,7 @@ export default function HomePage() {
       .catch((err) => console.log("Database fetch fallback:", err));
 
     // 3. Fetch latest site content from MongoDB settings API
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {

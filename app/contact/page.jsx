@@ -33,7 +33,7 @@ export default function ContactPage() {
     };
     window.addEventListener("rotaract_site_content_updated", handleUpdate);
 
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {

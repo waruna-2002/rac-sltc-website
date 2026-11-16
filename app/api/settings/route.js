@@ -4,6 +4,9 @@ import SiteSetting from "@/models/SiteSetting";
 import { requireAdmin } from "@/lib/serverAuth";
 import { sanitizeInput, sanitizeUrl } from "@/lib/security";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const defaultSiteContent = {
   // Hero Section
   heroTitle: "ROTARACT CLUB OF SLTC",
@@ -45,28 +48,45 @@ export async function GET() {
   try {
     await dbConnect();
 
+    const noCacheHeaders = {
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+    };
+
     const record = await SiteSetting.findOne({ key: "global_site_content" });
     if (record && record.content && Object.keys(record.content).length > 0) {
-      return NextResponse.json({
-        success: true,
-        data: { ...defaultSiteContent, ...record.content },
-        source: "database",
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          data: { ...defaultSiteContent, ...record.content },
+          source: "database",
+        },
+        { headers: noCacheHeaders }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: defaultSiteContent,
-      source: "default",
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: defaultSiteContent,
+        source: "default",
+      },
+      { headers: noCacheHeaders }
+    );
   } catch (error) {
     // Graceful fallback if MongoDB is not reachable
-    return NextResponse.json({
-      success: true,
-      data: defaultSiteContent,
-      source: "fallback",
-      error: error.message,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: defaultSiteContent,
+        source: "fallback",
+        error: error.message,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+        },
+      }
+    );
   }
 }
 
@@ -108,10 +128,19 @@ export async function POST(request) {
 
     await dbConnect();
 
+    // Fetch existing document to deep-merge so partial updates don't destroy other CMS fields!
+    const existing = await SiteSetting.findOne({ key: "global_site_content" });
+    const existingContent =
+      existing && existing.content && typeof existing.content === "object"
+        ? (existing.content.toObject ? existing.content.toObject() : existing.content)
+        : {};
+
+    const mergedContent = { ...existingContent, ...sanitized };
+
     const updated = await SiteSetting.findOneAndUpdate(
       { key: "global_site_content" },
       {
-        content: sanitized,
+        content: mergedContent,
         updatedBy: auth.role,
       },
       {
