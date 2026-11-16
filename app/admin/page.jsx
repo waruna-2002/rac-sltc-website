@@ -2878,7 +2878,7 @@ function AdminDashboardInner() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleAdminFileUpload(e, (url) => setNewEventForm({ ...newEventForm, image: url }))}
+                  onChange={(e) => handleAdminFileUpload(e, (url) => setNewEventForm({ ...newEventForm, image: Array.isArray(url) ? url[0] : url }))}
                   className="text-xs text-slate-400 mb-2 block"
                 />
               )}
@@ -3079,7 +3079,7 @@ function AdminDashboardInner() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleAdminFileUpload(e, (url) => setEditingEvent({ ...editingEvent, image: url }))}
+                  onChange={(e) => handleAdminFileUpload(e, (url) => setEditingEvent({ ...editingEvent, image: Array.isArray(url) ? url[0] : url }))}
                   className="text-xs text-slate-400 mb-2 block"
                 />
               )}
@@ -3177,7 +3177,7 @@ function AdminDashboardInner() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleAdminFileUpload(e, (url) => setEditingMember({ ...editingMember, image: url }))}
+                onChange={(e) => handleAdminFileUpload(e, (url) => setEditingMember({ ...editingMember, image: Array.isArray(url) ? url[0] : url }))}
                 className="text-xs text-slate-400 mb-2 block"
               />
             </div>
@@ -3285,7 +3285,7 @@ function AdminDashboardInner() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleAdminFileUpload(e, (url) => setNewMemberForm({ ...newMemberForm, image: url }))}
+                onChange={(e) => handleAdminFileUpload(e, (url) => setNewMemberForm({ ...newMemberForm, image: Array.isArray(url) ? url[0] : url }))}
                 className="text-xs text-slate-400 mb-2 block"
               />
             </div>

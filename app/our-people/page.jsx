@@ -38,7 +38,7 @@ export default function OurPeoplePage() {
   const filteredTeam = filter === "All" ? teamList : teamList.filter(m => m.category === filter);
 
   // Find president for special top spotlight banner
-  const president = teamList.find(m => m.role.trim().toLowerCase() === "president");
+  const president = teamList.find(m => m.role && typeof m.role === "string" && m.role.trim().toLowerCase() === "president");
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-14 bg-[#07090e]">

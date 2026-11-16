@@ -48,7 +48,7 @@ export async function PATCH(request, { params }) {
   if (body.date) updates.date = body.date;
   if (body.time) updates.time = sanitizeInput(body.time);
   if (body.location) updates.location = sanitizeInput(body.location);
-  if (body.image) updates.image = sanitizeUrl(body.image);
+  if (body.image !== undefined) updates.image = sanitizeUrl(body.image);
   if (body.registrationLink) updates.registrationLink = sanitizeUrl(body.registrationLink);
   if (body.registrationOpen !== undefined) updates.registrationOpen = Boolean(body.registrationOpen);
   if (body.featured !== undefined) updates.featured = Boolean(body.featured);

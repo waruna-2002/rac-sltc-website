@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
@@ -12,7 +13,13 @@ export default function HeroSection() {
     heroSubtitle: "Ignite Potential • Inspire Impact • Serve with Passion",
     districtBadge: "Rotaract District 3220 • Sri Lanka & Maldives",
     heroButtonText: "JOIN US NOW",
+    heroBackgroundImage: "",
   });
+  const [heroImgError, setHeroImgError] = useState(false);
+
+  useEffect(() => {
+    setHeroImgError(false);
+  }, [site.heroBackgroundImage]);
 
   useEffect(() => {
     setSite(getStoredSiteContent());
@@ -111,13 +118,14 @@ export default function HeroSection() {
       />
 
       {/* Optional Custom Hero Background Photo */}
-      {site.heroBackgroundImage && (
+      {site.heroBackgroundImage && !heroImgError && (
         <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
           <Image
             src={site.heroBackgroundImage}
             alt="Hero Banner Background"
             fill
             unoptimized
+            onError={() => setHeroImgError(true)}
             className="object-cover opacity-25 filter brightness-50"
             priority
           />

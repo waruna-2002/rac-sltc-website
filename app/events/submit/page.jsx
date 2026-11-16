@@ -74,8 +74,9 @@ export default function SubmitUpcomingEventPage() {
       });
 
       const data = await res.json();
-      if (res.ok && data.success && data.url) {
-        setForm((prev) => ({ ...prev, image: data.url }));
+      const uploadedImageUrl = data.data?.imageUrl || data.imageUrl || data.url;
+      if (res.ok && data.success && uploadedImageUrl) {
+        setForm((prev) => ({ ...prev, image: uploadedImageUrl }));
       } else {
         const reader = new FileReader();
         reader.onload = (evt) => {

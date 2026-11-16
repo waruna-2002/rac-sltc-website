@@ -10,11 +10,13 @@ export const defaultSiteContent = {
   heroSubtitle: "Ignite Potential • Inspire Impact • Serve with Passion",
   districtBadge: "Rotaract District 3220 • Sri Lanka & Maldives",
   heroButtonText: "JOIN US NOW",
+  heroBackgroundImage: "",
 
   // Who We Are (Homepage)
   whoWeAreTitle: "Empowering Leaders, Transforming Communities.",
   whoWeAreDescription:
     "The Rotaract Club of SLTC brings together passionate undergraduates dedicated to leadership, tech innovation, and humanitarian service. Based at SLTC Research University, we empower students to lead meaningful community initiatives and cultivate high-impact skills.",
+  whoWeAreImage: "",
   missionText: "To foster responsible youth leadership through impactful service above self.",
   visionText: "Building an inspired university community dedicated to social impact.",
 
@@ -89,7 +91,12 @@ export async function POST(request) {
     const sanitized = {};
     for (const [key, value] of Object.entries(rawContent)) {
       if (typeof value === "string") {
-        if (key.toLowerCase().includes("url") || key.toLowerCase().includes("link")) {
+        if (
+          key.toLowerCase().includes("url") ||
+          key.toLowerCase().includes("link") ||
+          key.toLowerCase().includes("image") ||
+          key.toLowerCase().includes("photo")
+        ) {
           sanitized[key] = sanitizeUrl(value);
         } else {
           sanitized[key] = sanitizeInput(value);

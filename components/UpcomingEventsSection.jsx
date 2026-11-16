@@ -133,8 +133,9 @@ export default function UpcomingEventsSection() {
       });
 
       const data = await res.json();
-      if (res.ok && data.success && data.url) {
-        setProposeForm((prev) => ({ ...prev, image: data.url }));
+      const uploadedImageUrl = data.data?.imageUrl || data.imageUrl || data.url;
+      if (res.ok && data.success && uploadedImageUrl) {
+        setProposeForm((prev) => ({ ...prev, image: uploadedImageUrl }));
       } else {
         // Fallback to base64 preview
         const reader = new FileReader();

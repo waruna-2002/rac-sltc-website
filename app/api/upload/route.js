@@ -5,6 +5,11 @@ import Media from "@/models/Media";
 import { requireAdmin } from "@/lib/serverAuth";
 import { sanitizeInput } from "@/lib/security";
 import { deleteCloudinaryFile } from "@/lib/cloudinaryCleanup";
+import { 
+  getClientIp, 
+  checkServerRateLimit, 
+  rateLimitExceededResponse 
+} from "@/lib/serverRateLimit";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -31,12 +36,25 @@ export async function GET(req) {
   }
 }
 
-// POST: Upload verified image to Cloudinary and record in MongoDB (Admin Only)
+// POST: Upload verified image to Cloudinary (Admin saves to Media gallery; Public proposals rate-limited)
 export async function POST(req) {
-  // 1. Enforce Server-Side Admin Authentication
+  // Check Admin Authorization
   const auth = requireAdmin(req, ["super_admin", "project_editor"]);
-  if (!auth.authorized) {
-    return auth.response;
+  const isAdmin = auth.authorized;
+
+  // Rate-limit guest / non-admin public submissions (e.g. event proposals)
+  if (!isAdmin) {
+    const ip = getClientIp(req);
+    const rateCheck = checkServerRateLimit(`upload-guest:${ip}`, {
+      limit: 15,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (!rateCheck.allowed) {
+      return rateLimitExceededResponse(
+        rateCheck.resetInSeconds,
+        "Too many upload requests. Please wait a moment."
+      );
+    }
   }
 
   try {
@@ -124,21 +142,31 @@ export async function POST(req) {
       avenue,
     };
 
-    try {
-      await dbConnect();
-      const savedDoc = await Media.create({
+    if (isAdmin) {
+      try {
+        await dbConnect();
+        const savedDoc = await Media.create({
+          title,
+          imageUrl: uploadResponse.secure_url,
+          publicId: uploadResponse.public_id,
+          avenue,
+        });
+        newMedia = savedDoc;
+      } catch (dbErr) {
+        console.warn("MongoDB media registry note (Cloudinary upload succeeded):", dbErr.message);
+      }
+    } else {
+      newMedia = {
         title,
         imageUrl: uploadResponse.secure_url,
         publicId: uploadResponse.public_id,
         avenue,
-      });
-      newMedia = savedDoc;
-    } catch (dbErr) {
-      console.warn("MongoDB media registry note (Cloudinary upload succeeded):", dbErr.message);
+      };
     }
 
     // Auto-clean: If replacing an existing Cloudinary asset, delete the previous image from Cloudinary
     if (
+      isAdmin &&
       previousImageUrl &&
       typeof previousImageUrl === "string" &&
       previousImageUrl.includes("res.cloudinary.com")
@@ -154,7 +182,13 @@ export async function POST(req) {
     }
 
     return NextResponse.json(
-      { success: true, data: newMedia, message: "Image uploaded successfully." },
+      {
+        success: true,
+        url: uploadResponse.secure_url,
+        imageUrl: uploadResponse.secure_url,
+        data: newMedia,
+        message: "Image uploaded successfully.",
+      },
       { status: 201 }
     );
   } catch (error) {

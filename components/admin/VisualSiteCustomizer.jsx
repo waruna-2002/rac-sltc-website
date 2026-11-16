@@ -368,14 +368,26 @@ export default function VisualSiteCustomizer({
                     </div>
 
                     {siteContent.heroBackgroundImage && (
-                      <div className="relative h-28 w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
-                        <Image
-                          src={siteContent.heroBackgroundImage}
-                          alt="Hero Background Preview"
-                          fill
-                          unoptimized
-                          className="object-cover"
-                        />
+                      <div className="space-y-2">
+                        <div className="relative h-28 w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+                          <Image
+                            src={siteContent.heroBackgroundImage}
+                            alt="Hero Background Preview"
+                            fill
+                            unoptimized
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-slate-400 truncate max-w-xs">{siteContent.heroBackgroundImage}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateContent("heroBackgroundImage", "")}
+                            className="text-xs text-rose-400 hover:text-rose-300 font-bold cursor-pointer"
+                          >
+                            Remove Photo
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -445,6 +457,18 @@ export default function VisualSiteCustomizer({
                         className="object-cover"
                       />
                     </div>
+                    {siteContent.whoWeAreImage && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 truncate max-w-xs">{siteContent.whoWeAreImage}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateContent("whoWeAreImage", "")}
+                          className="text-xs text-rose-400 hover:text-rose-300 font-bold cursor-pointer"
+                        >
+                          Remove Photo
+                        </button>
+                      </div>
+                    )}
 
                     <div>
                       <label className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#e6007e] to-[#ff2a9d] hover:brightness-110 text-white text-xs font-bold uppercase tracking-wider cursor-pointer shadow-md shadow-[#e6007e]/30 transition-all">

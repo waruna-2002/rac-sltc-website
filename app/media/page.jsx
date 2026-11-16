@@ -31,6 +31,16 @@ function MediaContent() {
     const all = getStoredMedia();
     setMediaItems(all.filter((m) => m.status === "approved" || !m.status));
 
+    // Fetch live from /api/media
+    fetch("/api/media?status=approved")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setMediaItems(json.data.filter((m) => m.status === "approved" || !m.status));
+        }
+      })
+      .catch((err) => console.log("Media fetch fallback:", err));
+
     const handleUpdate = (e) => {
       if (Array.isArray(e.detail)) {
         setMediaItems(e.detail.filter((m) => m.status === "approved" || !m.status));

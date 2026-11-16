@@ -67,6 +67,11 @@ export default function GlobalAdminEditModal() {
         {type === "hero" && (
           <div className="space-y-4">
             <Input
+              label="Hero Main Title"
+              value={formData.heroTitle || ""}
+              onChange={(e) => setFormData({ ...formData, heroTitle: e.target.value })}
+            />
+            <Input
               label="Hero Subtitle / Tagline"
               value={formData.heroSubtitle || ""}
               onChange={(e) => setFormData({ ...formData, heroSubtitle: e.target.value })}
@@ -76,6 +81,24 @@ export default function GlobalAdminEditModal() {
               value={formData.districtBadge || ""}
               onChange={(e) => setFormData({ ...formData, districtBadge: e.target.value })}
             />
+            <Input
+              label="Hero Background Photo / Cover Image URL"
+              value={formData.heroBackgroundImage || ""}
+              placeholder="https://res.cloudinary.com/..."
+              onChange={(e) => setFormData({ ...formData, heroBackgroundImage: e.target.value })}
+            />
+            {formData.heroBackgroundImage && (
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] text-slate-400 truncate max-w-xs">{formData.heroBackgroundImage}</span>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, heroBackgroundImage: "" })}
+                  className="text-xs text-rose-400 hover:text-rose-300 font-bold"
+                >
+                  Clear Photo
+                </button>
+              </div>
+            )}
           </div>
         )}
 
