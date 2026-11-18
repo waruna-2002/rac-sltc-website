@@ -81,6 +81,9 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: "46rZdmT52qRuxdUL1DX5nQNroanLM_zwgpCVi35TeZg",
+  },
 };
 
 const jsonLd = {
@@ -125,6 +128,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <meta
+          name="google-site-verification"
+          content="46rZdmT52qRuxdUL1DX5nQNroanLM_zwgpCVi35TeZg"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
