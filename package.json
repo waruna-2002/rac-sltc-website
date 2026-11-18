@@ -10,6 +10,7 @@
     "seed": "node --env-file=.env.local scripts/seedDatabase.js"
   },
   "dependencies": {
+    "canvas-confetti": "^1.9.4",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.0",

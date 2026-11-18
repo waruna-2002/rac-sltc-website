@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
   MapPin, 
@@ -38,6 +39,9 @@ const Icons = {
 };
 
 export default function Footer() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/launch")) return null;
+
   const [email, setEmail] = useState("");
   const [site, setSite] = useState({
     address: "SLTC Research University, Ingiriya Road, Padukka, Sri Lanka",

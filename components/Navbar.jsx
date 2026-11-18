@@ -18,6 +18,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   const pathname = usePathname();
+  if (pathname?.startsWith("/launch")) return null;
   const [mediaDropdownOpen, setMediaDropdownOpen] = useState(false);
   const [projectsDropdownOpen, setProjectsDropdownOpen] = useState(false);
 

@@ -43,6 +43,7 @@ import {
 import { useAdmin } from "@/context/AdminContext";
 import AdminLoginPortal from "@/components/admin/AdminLoginPortal";
 import VisualSiteCustomizer from "@/components/admin/VisualSiteCustomizer";
+import LaunchControlPanel from "@/components/admin/LaunchControlPanel";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -82,7 +83,8 @@ import {
   Newspaper,
   Sparkles,
   BellRing,
-  Download
+  Download,
+  Rocket
 } from "lucide-react";
 
 function AdminDashboardInner() {
@@ -1249,6 +1251,18 @@ function AdminDashboardInner() {
             >
               Stats
             </button>
+
+            <button
+              onClick={() => setActiveTab("launch")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === "launch"
+                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30"
+                  : "text-[#e6007e] hover:text-white hover:bg-[#e6007e]/20 bg-[#e6007e]/10 border border-[#e6007e]/30"
+              }`}
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              <span>Launch Control</span>
+            </button>
           </>
         )}
       </div>
@@ -2342,6 +2356,11 @@ function AdminDashboardInner() {
             Save Counter Stats
           </Button>
         </form>
+      )}
+
+      {/* TAB 9: LAUNCH CONTROL CENTER */}
+      {isSuperAdmin && activeTab === "launch" && (
+        <LaunchControlPanel />
       )}
 
       {/* EDIT PROJECT MODAL */}

@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import AmbientBackground from "../components/AmbientBackground";
 import { AdminProvider } from "../context/AdminContext";
+import LaunchGate from "../components/LaunchGate";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rotaractsltc.vercel.app";
 
@@ -142,10 +143,12 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning
       >
         <AdminProvider>
-          <AmbientBackground />
-          <Navbar />
-          <main className="flex-grow relative z-10">{children}</main>
-          <Footer />
+          <LaunchGate>
+            <AmbientBackground />
+            <Navbar />
+            <main className="flex-grow relative z-10">{children}</main>
+            <Footer />
+          </LaunchGate>
         </AdminProvider>
       </body>
     </html>
