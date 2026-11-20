@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import PersonCard from "@/components/PersonCard";
 import MemberModal from "@/components/MemberModal";
 import { getStoredTeam, syncTeamFromDatabase, getRoleTier } from "@/lib/teamStore";
-import { motion } from "framer-motion";
-import { Users } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, Filter, ChevronDown, Check, X } from "lucide-react";
 import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 const STANDARD_AVENUES = [
@@ -24,6 +24,18 @@ export default function OurPeoplePage() {
   const [selectedAvenue, setSelectedAvenue] = useState("All");
   const [selectedMember, setSelectedMember] = useState(null);
   const [teamList, setTeamList] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     // 1. Instant render from local cache
@@ -104,24 +116,95 @@ export default function OurPeoplePage() {
         title="Our People"
         highlightWord="People"
         subtitle="Meet the passionate visionaries driving the Rotaract Club of SLTC forward for the Rotary Year 2025-26. Click on any member to view full details & achievements."
-      >
-        {/* Filter Tabs by Avenue */}
-        <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-5xl mx-auto">
-          {avenuesList.map((ave) => (
-            <button
-              key={ave}
-              onClick={() => setSelectedAvenue(ave)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                selectedAvenue === ave
-                  ? "bg-[#e6007e] text-white shadow-[0_0_20px_rgba(230,0,126,0.4)] border border-pink-400/40"
-                  : "bg-[#0c1017] text-slate-400 border border-slate-800 hover:text-white hover:border-slate-700"
-              }`}
-            >
-              {ave === "All" ? "All Avenues" : ave}
-            </button>
-          ))}
+      />
+
+      {/* Directory Filter Bar (Corner-Aligned) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-[#e6007e]" />
+          <span>Showing: <strong className="text-white">{activeList.length}</strong> {activeList.length === 1 ? "Leader" : "Leaders"}</span>
+          {selectedAvenue !== "All" && (
+            <span className="text-[11px] text-[#ff66ab] bg-[#e6007e]/10 px-2 py-0.5 rounded-md border border-[#e6007e]/20">
+              Filtered
+            </span>
+          )}
         </div>
-      </AnimatedPageHeader>
+
+        {/* Sleek Avenue Filter Dropdown (Right Corner Aligned) */}
+        <div className="relative self-end sm:self-auto" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-lg backdrop-blur-xl ${
+              selectedAvenue !== "All"
+                ? "bg-[#e6007e] text-white border border-pink-400/40 shadow-[#e6007e]/25"
+                : "bg-[#0c1017] text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700"
+            }`}
+          >
+            <Filter size={14} className={selectedAvenue !== "All" ? "text-white" : "text-[#e6007e]"} />
+            <span className="truncate max-w-[200px] sm:max-w-[240px]">
+              {selectedAvenue === "All" ? "Filter by Avenue" : selectedAvenue}
+            </span>
+            <ChevronDown
+              size={14}
+              className={`transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {/* Floating Dropdown Menu */}
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-2 w-72 p-2 rounded-2xl bg-[#0c1017]/95 border border-slate-800 shadow-2xl backdrop-blur-2xl z-50 space-y-1 overflow-hidden"
+              >
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-800/80 mb-1 flex items-center justify-between">
+                  <span>Select Avenue</span>
+                  {selectedAvenue !== "All" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAvenue("All");
+                        setIsDropdownOpen(false);
+                      }}
+                      className="text-[#ff66ab] hover:underline cursor-pointer lowercase"
+                    >
+                      reset
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                  {avenuesList.map((ave) => {
+                    const isSelected = selectedAvenue === ave;
+                    return (
+                      <button
+                        key={ave}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAvenue(ave);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30 font-bold"
+                            : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                        }`}
+                      >
+                        <span className="truncate mr-2">{ave === "All" ? "All Avenues" : ave}</span>
+                        {isSelected && <Check size={14} className="stroke-[3] shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       {/* Team Content By Hierarchy Layers (Without labels, auto-hiding empty layers) */}
       {activeList.length > 0 ? (
