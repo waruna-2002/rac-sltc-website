@@ -3,16 +3,18 @@ import dbConnect from "@/lib/mongodb";
 import TeamMember from "@/models/TeamMember";
 import { requireAdmin } from "@/lib/serverAuth";
 import { sanitizeInput, sanitizeUrl } from "@/lib/security";
+import { sortTeamByRoleTier } from "@/lib/teamRoles";
 
 // GET /api/team - Fetch all team members (Public)
 export async function GET() {
   try {
     await dbConnect();
-    const members = await TeamMember.find({}).sort({ order: 1, createdAt: 1 });
+    const members = await TeamMember.find({}).sort({ order: 1, createdAt: 1 }).lean();
+    const sorted = sortTeamByRoleTier(members);
     return NextResponse.json({
       success: true,
-      count: members.length,
-      data: members,
+      count: sorted.length,
+      data: sorted,
     });
   } catch (error) {
     console.warn("GET /api/team database error:", error.message);

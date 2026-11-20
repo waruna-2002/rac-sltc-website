@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import PersonCard from "@/components/PersonCard";
 import MemberModal from "@/components/MemberModal";
-import { getStoredTeam, syncTeamFromDatabase, getRoleTier } from "@/lib/teamStore";
+import { getStoredTeam, syncTeamFromDatabase, getRoleTier, sortTeamByRoleTier } from "@/lib/teamStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Filter, ChevronDown, Check, X } from "lucide-react";
+import { Users, Filter, ChevronDown, Check } from "lucide-react";
 import AnimatedPageHeader from "@/components/AnimatedPageHeader";
 
 const STANDARD_AVENUES = [
@@ -84,29 +84,38 @@ export default function OurPeoplePage() {
     return ["All", ...Array.from(avenueSet)];
   }, [teamList]);
 
-  // Filter team by selected avenue
+  // Filter and sort team by selected avenue and hierarchy
   const activeList = useMemo(() => {
-    if (selectedAvenue === "All") return teamList;
-    const target = selectedAvenue.trim().toLowerCase();
-    return teamList.filter((m) => {
-      const list = Array.isArray(m.avenues) && m.avenues.length > 0
-        ? m.avenues
-        : (m.avenue ? String(m.avenue).split(",").map((a) => a.trim()) : []);
-      return list.some((ave) => ave.trim().toLowerCase() === target);
-    });
+    let list = teamList;
+    if (selectedAvenue !== "All") {
+      const target = selectedAvenue.trim().toLowerCase();
+      list = teamList.filter((m) => {
+        const listAvenues = Array.isArray(m.avenues) && m.avenues.length > 0
+          ? m.avenues
+          : (m.avenue ? String(m.avenue).split(",").map((a) => a.trim()) : []);
+        return listAvenues.some((ave) => ave.trim().toLowerCase() === target);
+      });
+    }
+    return sortTeamByRoleTier(list);
   }, [teamList, selectedAvenue]);
 
-  // Split active members into 5 hierarchy layers
-  // Layer 1: President
+  // Split active members into hierarchy layers according to required order:
+  // 1: President
   const layer1 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 1), [activeList]);
-  // Layer 2: Vice President
+  // 2: Secretary
   const layer2 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 2), [activeList]);
-  // Layer 3: Avenue Secretary, Avenue Treasurer, Editor
+  // 3: Treasurer
   const layer3 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 3), [activeList]);
-  // Layer 4: Directors
+  // 4: Vice President
   const layer4 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 4), [activeList]);
-  // Layer 5: Remaining members (Assistant Director, Assistant Secretary, Assistant Treasurer, etc.)
+  // 5: Sergeant-at-Arms
   const layer5 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 5), [activeList]);
+  // 6: Editor (if present)
+  const layer6 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 6), [activeList]);
+  // 7: Directors
+  const layer7 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 7), [activeList]);
+  // 8: Remaining members (Assistant Director, Assistant Secretary, Assistant Treasurer, Avenue Officers, etc.)
+  const layer8 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 8), [activeList]);
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 bg-[#07090e]">
@@ -225,7 +234,7 @@ export default function OurPeoplePage() {
             </motion.div>
           )}
 
-          {/* Layer 2: Vice President */}
+          {/* Layer 2: Secretary */}
           {layer2.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
@@ -241,7 +250,7 @@ export default function OurPeoplePage() {
             </motion.div>
           )}
 
-          {/* Layer 3: Avenue Secretary, Avenue Treasurer, Editor */}
+          {/* Layer 3: Treasurer */}
           {layer3.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
@@ -257,29 +266,77 @@ export default function OurPeoplePage() {
             </motion.div>
           )}
 
-          {/* Layer 4: Directors */}
+          {/* Layer 4: Vice President */}
           {layer4.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.15 }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+              className="flex flex-wrap justify-center gap-6"
             >
               {layer4.map((member) => (
-                <PersonCard key={member.id || member._id} {...member} onClick={() => setSelectedMember(member)} />
+                <div key={member.id || member._id} className="w-full sm:w-[320px] max-w-sm">
+                  <PersonCard {...member} onClick={() => setSelectedMember(member)} />
+                </div>
               ))}
             </motion.div>
           )}
 
-          {/* Layer 5: Remaining Members */}
+          {/* Layer 5: Sergeant-at-Arms */}
           {layer5.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+              className="flex flex-wrap justify-center gap-6"
             >
               {layer5.map((member) => (
+                <div key={member.id || member._id} className="w-full sm:w-[320px] max-w-sm">
+                  <PersonCard {...member} onClick={() => setSelectedMember(member)} />
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {/* Layer 6: Editor (if any) */}
+          {layer6.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.25 }}
+              className="flex flex-wrap justify-center gap-6"
+            >
+              {layer6.map((member) => (
+                <div key={member.id || member._id} className="w-full sm:w-[320px] max-w-sm">
+                  <PersonCard {...member} onClick={() => setSelectedMember(member)} />
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {/* Layer 7: Directors */}
+          {layer7.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            >
+              {layer7.map((member) => (
+                <PersonCard key={member.id || member._id} {...member} onClick={() => setSelectedMember(member)} />
+              ))}
+            </motion.div>
+          )}
+
+          {/* Layer 8: Remaining Members */}
+          {layer8.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.35 }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            >
+              {layer8.map((member) => (
                 <PersonCard key={member.id || member._id} {...member} onClick={() => setSelectedMember(member)} />
               ))}
             </motion.div>

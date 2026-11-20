@@ -91,9 +91,9 @@ import {
 
 const TEAM_ROLE_OPTIONS = [
   "President",
-  "Vice President",
   "Secretary",
   "Treasurer",
+  "Vice President",
   "Sergeant at Arms",
   "Editor",
   "Avenue Secretary",
@@ -102,7 +102,6 @@ const TEAM_ROLE_OPTIONS = [
   "Assistant Director",
   "Assistant Secretary",
   "Assistant Treasurer",
-  "Assistant Treasure",
 ];
 
 const AVAILABLE_AVENUES = [
