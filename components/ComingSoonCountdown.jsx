@@ -80,25 +80,25 @@ export default function ComingSoonCountdown({ onUnlock, initialConfig }) {
       }
     };
 
-    // If countdown is zero, poll every 2.5s. Otherwise, every 25s.
-    const pollIntervalMs = timeLeft.isZero ? 2500 : 25000;
+    // Poll every 3 seconds so audience screens reveal instantly when stage launch button is pressed
+    const pollIntervalMs = 3000;
     const interval = setInterval(checkStatus, pollIntervalMs);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [timeLeft.isZero, targetDateStr]);
+  }, [targetDateStr]);
 
   const triggerLiveReveal = () => {
     setIsLiveRevealed(true);
     fireLaunchCelebration();
 
     setTimeout(() => {
-      if (onUnlock) {
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      } else if (onUnlock) {
         onUnlock();
-      } else {
-        window.location.reload();
       }
     }, 3800);
   };

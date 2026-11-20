@@ -104,17 +104,21 @@ function LaunchPageInner() {
     setStagePhase("REVEAL");
     setRevealActive(true);
 
-    // Trigger API update in central database
+    // Trigger API update in central database with await and fail-safe local unlock
     if (!hasTriggeredApi.current) {
       hasTriggeredApi.current = true;
-      fetch("/api/launch/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: passkey.trim() || "rsltc2026",
-          name: "Chief Guest",
-        }),
-      }).catch((err) => console.error("Launch trigger error:", err));
+      try {
+        await fetch("/api/launch/trigger", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            key: passkey.trim() || "rsltc2026",
+            name: "Chief Guest",
+          }),
+        });
+      } catch (err) {
+        console.error("Launch trigger error:", err);
+      }
     }
 
     // Brief 400ms silent breath as the text blooms into view, then triumphant climax fanfare!
@@ -129,8 +133,10 @@ function LaunchPageInner() {
     // Keep in full glory on screen for 3.5 seconds
     await new Promise((r) => setTimeout(r, 3500));
 
-    // Smooth auto-redirect to live homepage
-    router.push("/");
+    // Clean, robust navigation to live homepage (Guaranteed zero freeze / zero stale cache)
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
 
   return (

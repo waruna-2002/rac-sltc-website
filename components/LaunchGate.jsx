@@ -2,21 +2,18 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useAdmin } from "@/context/AdminContext";
 import ComingSoonCountdown from "./ComingSoonCountdown";
 
 function LaunchGateInner({ children }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { adminRole, isVerifying } = useAdmin();
 
   const [launchStatus, setLaunchStatus] = useState(null);
-  const [hasUnlockedLocally, setHasUnlockedLocally] = useState(false);
 
   const isTestCountdown = searchParams?.get("test_countdown") === "true";
   const isBypassCountdown = searchParams?.get("bypass_countdown") === "true";
 
-  // Check if current route is exempted
+  // Check if current route is exempted (admin, stage launch screen, or api)
   const isExemptRoute =
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/launch") ||
@@ -27,7 +24,13 @@ function LaunchGateInner({ children }) {
 
     async function fetchStatus() {
       try {
-        const res = await fetch("/api/launch/status", { cache: "no-store" });
+        const res = await fetch(`/api/launch/status?t=${Date.now()}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        });
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
@@ -55,30 +58,23 @@ function LaunchGateInner({ children }) {
     return <>{children}</>;
   }
 
-  // If user passed ?test_countdown=true, force show countdown for testing
-  if (isTestCountdown && !hasUnlockedLocally) {
-    return (
-      <ComingSoonCountdown
-        onUnlock={() => setHasUnlockedLocally(true)}
-        initialConfig={launchStatus}
-      />
-    );
+  // If user passed ?test_countdown=true, force show countdown for preview
+  if (isTestCountdown) {
+    return <ComingSoonCountdown initialConfig={launchStatus} />;
   }
 
-  // If admin is logged in and mode is COUNTDOWN, allow clean admin preview
+  // Pre-launch Countdown condition:
+  // Mode is COUNTDOWN and site is not yet launched
   const isCountdownActive =
-    launchStatus?.mode === "COUNTDOWN" && !launchStatus?.isLaunched && !hasUnlockedLocally;
+    launchStatus?.mode === "COUNTDOWN" && !launchStatus?.isLaunched;
 
-  if (isCountdownActive && adminRole && !isVerifying) {
-    return <>{children}</>;
-  }
-
-  // If Pre-launch Countdown mode is active and site is not yet launched
   if (isCountdownActive) {
     return (
       <ComingSoonCountdown
-        onUnlock={() => setHasUnlockedLocally(true)}
         initialConfig={launchStatus}
+        onUnlock={() => {
+          setLaunchStatus((prev) => (prev ? { ...prev, isLaunched: true } : null));
+        }}
       />
     );
   }

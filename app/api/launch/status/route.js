@@ -13,7 +13,9 @@ export async function GET() {
     },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=1, stale-while-revalidate=2",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     }
   );
