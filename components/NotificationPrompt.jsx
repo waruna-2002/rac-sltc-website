@@ -15,7 +15,7 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-export default function NotificationPrompt() {
+export default function NotificationPrompt({ variant = "banner", className = "" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("push"); // 'push' | 'email'
   const [emailInput, setEmailInput] = useState("");
@@ -141,25 +141,7 @@ export default function NotificationPrompt() {
 
   return (
     <>
-      {/* Banner / Trigger Bar */}
-      <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-r from-[#e6007e]/15 via-slate-900 to-cyan-500/15 border border-[#e6007e]/30 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-md">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-[#e6007e] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#e6007e]/40 animate-pulse">
-            <BellRing size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <span>Never Miss an Upcoming Event</span>
-              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 text-[10px] font-bold">
-                1 Day Prior Reminder
-              </span>
-            </h4>
-            <p className="text-xs text-slate-300 mt-0.5 font-light">
-              Turn on event reminders once to receive automated notifications 1 day before any approved Rotaract initiative.
-            </p>
-          </div>
-        </div>
-
+      {variant === "button" ? (
         <button
           type="button"
           onClick={() => {
@@ -167,12 +149,49 @@ export default function NotificationPrompt() {
             setSuccessMessage("");
             setErrorMessage("");
           }}
-          className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white text-slate-950 hover:bg-slate-100 text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center justify-center gap-2 shadow-lg cursor-pointer shrink-0 active:scale-95"
+          className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-[#e6007e] shadow-lg transition-all cursor-pointer group active:scale-95 shrink-0 ${className}`}
+          title="Get 1-Day Prior Event Reminders"
         >
-          <Bell size={14} className="text-[#e6007e]" />
-          <span>{pushStatus === "granted" ? "Manage Reminders" : "Get Event Reminders"}</span>
+          <BellRing size={15} className="text-[#ff66ab] group-hover:scale-110 transition-transform animate-pulse" />
+          <span className="truncate">{pushStatus === "granted" ? "Reminders On" : "Event Reminders"}</span>
+          <span className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 text-[9px] font-bold">
+            1 Day Prior
+          </span>
         </button>
-      </div>
+      ) : (
+        /* Banner / Trigger Bar */
+        <div className={`relative z-10 mb-8 rounded-2xl bg-gradient-to-r from-[#e6007e]/15 via-slate-900 to-cyan-500/15 border border-[#e6007e]/30 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-md ${className}`}>
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-[#e6007e] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#e6007e]/40 animate-pulse">
+              <BellRing size={20} />
+            </div>
+            <div>
+              <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Never Miss an Upcoming Event</span>
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 text-[10px] font-bold">
+                  1 Day Prior Reminder
+                </span>
+              </h4>
+              <p className="text-xs text-slate-300 mt-0.5 font-light">
+                Turn on event reminders once to receive automated notifications 1 day before any approved Rotaract initiative.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(true);
+              setSuccessMessage("");
+              setErrorMessage("");
+            }}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white text-slate-950 hover:bg-slate-100 text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center justify-center gap-2 shadow-lg cursor-pointer shrink-0 active:scale-95"
+          >
+            <Bell size={14} className="text-[#e6007e]" />
+            <span>{pushStatus === "granted" ? "Manage Reminders" : "Get Event Reminders"}</span>
+          </button>
+        </div>
+      )}
 
       {/* Subscription Modal */}
       {isOpen && (

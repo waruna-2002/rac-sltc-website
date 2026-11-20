@@ -1025,13 +1025,14 @@ function AdminDashboardInner() {
       avenue: selectedAvenues.join(", "),
     };
 
-    setTeam(updateTeamMember(editingMember.id, payload));
+    const memberId = editingMember.id || editingMember._id;
+    setTeam(updateTeamMember(memberId, payload));
     setEditingMember(null);
     showToast("Team member profile updated!", "success");
   };
 
   const handleDeleteMember = (id) => {
-    const mem = team.find((t) => t.id === id);
+    const mem = team.find((t) => t.id === id || t._id === id || String(t._id) === String(id));
     requestDelete("team", id, mem?.name || "this team member");
   };
 
@@ -2424,54 +2425,57 @@ function AdminDashboardInner() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sortTeamByRoleTier(team).map((member) => (
-              <div
-                key={member.id}
-                className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative h-48 rounded-xl overflow-hidden bg-slate-900 mb-3">
-                    <Image
-                      src={member.image || "/images/team/placeholder.jpg"}
-                      alt={member.name}
-                      fill
-                      className="object-cover"
-                    />
+            {sortTeamByRoleTier(team).map((member) => {
+              const memberId = member.id || member._id;
+              return (
+                <div
+                  key={memberId}
+                  className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative h-48 rounded-xl overflow-hidden bg-slate-900 mb-3">
+                      <Image
+                        src={member.image || "/images/team/placeholder.jpg"}
+                        alt={member.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-1">
+                      {(() => {
+                        const list = Array.isArray(member.avenues) && member.avenues.length > 0
+                          ? member.avenues
+                          : (member.avenue ? String(member.avenue).split(",").map((a) => a.trim()) : []);
+                        const valid = list.filter((a) => a && !a.toLowerCase().includes("executive") && !a.toLowerCase().includes("general"));
+                        if (valid.length === 0) return null;
+                        return valid.map((ave, i) => (
+                          <span key={i} className="text-[10px] font-bold text-[#e6007e] uppercase tracking-wider bg-[#e6007e]/10 px-2 py-0.5 rounded-md">
+                            {ave}
+                          </span>
+                        ));
+                      })()}
+                    </div>
+                    <h3 className="text-base font-bold text-white mt-1">{member.name}</h3>
+                    <p className="text-xs text-[#ff66ab] font-medium">{member.role}</p>
                   </div>
-                  <div className="flex flex-wrap gap-1 mb-1">
-                    {(() => {
-                      const list = Array.isArray(member.avenues) && member.avenues.length > 0
-                        ? member.avenues
-                        : (member.avenue ? String(member.avenue).split(",").map((a) => a.trim()) : []);
-                      const valid = list.filter((a) => a && !a.toLowerCase().includes("executive") && !a.toLowerCase().includes("general"));
-                      if (valid.length === 0) return null;
-                      return valid.map((ave, i) => (
-                        <span key={i} className="text-[10px] font-bold text-[#e6007e] uppercase tracking-wider bg-[#e6007e]/10 px-2 py-0.5 rounded-md">
-                          {ave}
-                        </span>
-                      ));
-                    })()}
-                  </div>
-                  <h3 className="text-base font-bold text-white mt-1">{member.name}</h3>
-                  <p className="text-xs text-[#ff66ab] font-medium">{member.role}</p>
-                </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800/80">
-                  <button
-                    onClick={() => setEditingMember(member)}
-                    className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
-                  >
-                    <Edit3 size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteMember(member.id)}
-                    className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:text-rose-300 cursor-pointer"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800/80">
+                    <button
+                      onClick={() => setEditingMember({ ...member, id: memberId, _id: memberId })}
+                      className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMember(memberId)}
+                      className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:text-rose-300 cursor-pointer"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

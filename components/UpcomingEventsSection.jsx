@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -19,7 +19,10 @@ import {
   Upload,
   LayoutGrid,
   CalendarDays,
-  CalendarCheck
+  CalendarCheck,
+  Filter,
+  ChevronDown,
+  Check
 } from "lucide-react";
 import EventCalendar from "@/components/EventCalendar";
 import NotificationPrompt from "@/components/NotificationPrompt";
@@ -32,6 +35,18 @@ export default function UpcomingEventsSection() {
   const [selectedAvenue, setSelectedAvenue] = useState("All");
   const [activeModalEvent, setActiveModalEvent] = useState(null);
   const [viewMode, setViewMode] = useState("calendar"); // 'calendar' | 'cards'
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Viewer proposal modal states
   const [isProposeModalOpen, setIsProposeModalOpen] = useState(false);
@@ -230,76 +245,132 @@ export default function UpcomingEventsSection() {
         />
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              setIsProposeModalOpen(true);
-              setProposeSuccess(false);
-              setErrorMessage("");
-            }}
-            className="inline-flex items-center gap-2 text-xs font-bold text-white transition-all uppercase tracking-wider bg-[#e6007e] hover:bg-[#c4006c] px-4 py-2.5 rounded-xl shadow-lg shadow-[#e6007e]/30 cursor-pointer active:scale-95"
-          >
-            <PlusCircle size={15} />
-            <span>Propose Event</span>
-          </button>
-
-          <Link
-            href="/join-us"
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-widest bg-slate-900 border border-slate-800 hover:border-[#e6007e] px-4 py-2.5 rounded-xl shadow-lg"
-          >
-            <span>Join Us</span>
-            <ArrowRight size={14} />
-          </Link>
+          {/* Notification Button (Moved cleanly to the side) */}
+          <NotificationPrompt variant="button" />
         </div>
       </div>
 
-      {/* VISITOR EVENT NOTIFICATIONS REMINDER PROMPT */}
-      <NotificationPrompt />
-
-      {/* Avenue Filter & View Switcher Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 relative z-10">
-        <div className="flex flex-wrap gap-2">
-          {avenues.map((ave) => (
-            <button
-              key={ave}
-              onClick={() => setSelectedAvenue(ave)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                selectedAvenue === ave
-                  ? "bg-[#e6007e] text-white shadow-lg shadow-[#e6007e]/30 border border-pink-400/40"
-                  : "bg-[#0c1017] text-slate-400 border border-slate-800 hover:text-white hover:border-slate-700"
-              }`}
-            >
-              {ave}
-            </button>
-          ))}
+      {/* Clean Directory Toolbar: Live Event Count + Sleek Avenue Dropdown + View Mode */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-8 border-b border-slate-800/80 relative z-20">
+        {/* Left: Showing X Events */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-[#e6007e]" />
+          <span>
+            Showing: <strong className="text-white">{filteredEvents.length}</strong> {filteredEvents.length === 1 ? "Upcoming Event" : "Upcoming Events"}
+          </span>
+          {selectedAvenue !== "All" && (
+            <span className="text-[11px] text-[#ff66ab] bg-[#e6007e]/10 px-2 py-0.5 rounded-md border border-[#e6007e]/20">
+              Filtered
+            </span>
+          )}
         </div>
 
-        {/* View Mode Toggle: Google Calendar vs Grid Cards */}
-        <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1 rounded-xl self-start lg:self-auto shrink-0 shadow-lg">
-          <button
-            type="button"
-            onClick={() => setViewMode("calendar")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              viewMode === "calendar"
-                ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <CalendarDays size={14} />
-            <span>Interactive Calendar</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("cards")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              viewMode === "cards"
-                ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <LayoutGrid size={14} />
-            <span>Cards View</span>
-          </button>
+        {/* Right: Controls (Avenue Filter Dropdown & View Mode Switcher) */}
+        <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
+          {/* Sleek Avenue Filter Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-lg backdrop-blur-xl ${
+                selectedAvenue !== "All"
+                  ? "bg-[#e6007e] text-white border border-pink-400/40 shadow-[#e6007e]/25"
+                  : "bg-[#0c1017] text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700"
+              }`}
+            >
+              <Filter size={14} className={selectedAvenue !== "All" ? "text-white" : "text-[#e6007e]"} />
+              <span className="truncate max-w-[170px] sm:max-w-[210px]">
+                {selectedAvenue === "All" ? "Filter by Avenue" : selectedAvenue}
+              </span>
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {/* Floating Dropdown Menu */}
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-72 p-2 rounded-2xl bg-[#0c1017]/95 border border-slate-800 shadow-2xl backdrop-blur-2xl z-50 space-y-1 overflow-hidden"
+                >
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-800/80 mb-1 flex items-center justify-between">
+                    <span>Select Avenue</span>
+                    {selectedAvenue !== "All" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAvenue("All");
+                          setIsDropdownOpen(false);
+                        }}
+                        className="text-[#ff66ab] hover:underline cursor-pointer lowercase"
+                      >
+                        reset
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {avenues.map((ave) => {
+                      const isSelected = selectedAvenue === ave;
+                      return (
+                        <button
+                          key={ave}
+                          type="button"
+                          onClick={() => {
+                            setSelectedAvenue(ave);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 rounded-xl text-xs font-semibold text-left transition-all flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30 font-bold"
+                              : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                          }`}
+                        >
+                          <span className="truncate mr-2">{ave === "All" ? "All Avenues" : ave}</span>
+                          {isSelected && <Check size={14} className="stroke-[3] shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* View Mode Toggle: Interactive Calendar vs Cards View */}
+          <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1 rounded-2xl shrink-0 shadow-lg">
+            <button
+              type="button"
+              onClick={() => setViewMode("calendar")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === "calendar"
+                  ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <CalendarDays size={14} />
+              <span className="hidden sm:inline">Interactive Calendar</span>
+              <span className="sm:hidden">Calendar</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === "cards"
+                  ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <LayoutGrid size={14} />
+              <span className="hidden sm:inline">Cards View</span>
+              <span className="sm:hidden">Cards</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -326,7 +397,7 @@ export default function UpcomingEventsSection() {
               ? "No upcoming events scheduled yet."
               : `No upcoming events scheduled in ${selectedAvenue}.`}
           </p>
-          <p className="text-slate-500 text-xs mt-1">Have an event in mind? Click &quot;Propose Event&quot; above to submit an upcoming initiative.</p>
+          <p className="text-slate-500 text-xs mt-1">Stay tuned! New community projects and leadership drives will appear here once announced.</p>
         </div>
       ) : viewMode === "calendar" ? (
         <EventCalendar events={filteredEvents} onSelectEvent={setActiveModalEvent} />

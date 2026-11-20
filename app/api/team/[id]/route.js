@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
 import TeamMember from "@/models/TeamMember";
 import { requireAdmin } from "@/lib/serverAuth";
@@ -13,9 +14,9 @@ export async function PATCH(request, { params }) {
   }
 
   const { id } = await params;
-  if (!id) {
+  if (!id || id === "undefined" || !mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json(
-      { success: false, error: "Member ID is required." },
+      { success: false, error: "Valid Member ID is required." },
       { status: 400 }
     );
   }
@@ -92,9 +93,9 @@ export async function DELETE(request, { params }) {
   }
 
   const { id } = await params;
-  if (!id) {
+  if (!id || id === "undefined" || !mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json(
-      { success: false, error: "Member ID is required." },
+      { success: false, error: "Valid Member ID is required." },
       { status: 400 }
     );
   }
