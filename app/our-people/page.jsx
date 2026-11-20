@@ -112,10 +112,14 @@ export default function OurPeoplePage() {
   const layer5 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 5), [activeList]);
   // 6: Editor (if present)
   const layer6 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 6), [activeList]);
-  // 7: Directors
+  // 7: Avenue Secretary (comes before Director)
   const layer7 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 7), [activeList]);
-  // 8: Remaining members (Assistant Director, Assistant Secretary, Assistant Treasurer, Avenue Officers, etc.)
+  // 8: Avenue Treasurer (comes before Director)
   const layer8 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 8), [activeList]);
+  // 9: Directors
+  const layer9 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 9), [activeList]);
+  // 10: Remaining members (Assistant Director, Assistant Secretary, Assistant Treasurer, etc.)
+  const layer10 = useMemo(() => activeList.filter((m) => getRoleTier(m.role) === 10), [activeList]);
 
   return (
     <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 bg-[#07090e]">
@@ -314,29 +318,61 @@ export default function OurPeoplePage() {
             </motion.div>
           )}
 
-          {/* Layer 7: Directors */}
+          {/* Layer 7: Avenue Secretary */}
           {layer7.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+              className="flex flex-wrap justify-center gap-6"
             >
               {layer7.map((member) => (
-                <PersonCard key={member.id || member._id} {...member} onClick={() => setSelectedMember(member)} />
+                <div key={member.id || member._id} className="w-full sm:w-[320px] max-w-sm">
+                  <PersonCard {...member} onClick={() => setSelectedMember(member)} />
+                </div>
               ))}
             </motion.div>
           )}
 
-          {/* Layer 8: Remaining Members */}
+          {/* Layer 8: Avenue Treasurer */}
           {layer8.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.35 }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+              className="flex flex-wrap justify-center gap-6"
             >
               {layer8.map((member) => (
+                <div key={member.id || member._id} className="w-full sm:w-[320px] max-w-sm">
+                  <PersonCard {...member} onClick={() => setSelectedMember(member)} />
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {/* Layer 9: Directors */}
+          {layer9.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            >
+              {layer9.map((member) => (
+                <PersonCard key={member.id || member._id} {...member} onClick={() => setSelectedMember(member)} />
+              ))}
+            </motion.div>
+          )}
+
+          {/* Layer 10: Remaining Members */}
+          {layer10.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.45 }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            >
+              {layer10.map((member) => (
                 <PersonCard key={member.id || member._id} {...member} onClick={() => setSelectedMember(member)} />
               ))}
             </motion.div>
