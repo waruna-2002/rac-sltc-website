@@ -23,6 +23,10 @@ const TeamMemberSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    avenues: {
+      type: [String],
+      default: [],
+    },
     faculty: {
       type: String,
       default: "",

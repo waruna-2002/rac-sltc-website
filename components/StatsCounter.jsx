@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { getStoredStats } from "@/lib/statsStore";
-import { Users, Rocket, HeartHandshake, ShieldAlert } from "lucide-react";
 
-const icons = [Users, Rocket, HeartHandshake, ShieldAlert];
 const glows = [
   "from-pink-500/20 to-[#e6007e]/30",
   "from-cyan-500/20 to-blue-600/30",
@@ -46,7 +44,6 @@ export default function StatsCounter() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((item, idx) => {
-            const Icon = icons[idx % icons.length];
             const glow = glows[idx % glows.length];
             return (
               <motion.div
@@ -56,21 +53,23 @@ export default function StatsCounter() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 whileHover={{ y: -6, scale: 1.02 }}
-                className="relative p-6 rounded-2xl bg-[#0c1017]/80 border border-slate-800/80 hover:border-[#e6007e]/50 backdrop-blur-xl transition-all shadow-xl group/card overflow-hidden"
+                className="relative py-8 px-4 sm:py-10 sm:px-6 rounded-3xl bg-[#0c1017]/80 border border-slate-800/80 hover:border-[#e6007e]/60 backdrop-blur-xl transition-all duration-300 shadow-xl hover:shadow-[0_0_35px_rgba(230,0,126,0.25)] group/card overflow-hidden flex flex-col items-center justify-center text-center"
               >
+                {/* Background Corner Glow Effect */}
                 <div
-                  className={`absolute -right-8 -bottom-8 w-24 h-24 bg-gradient-to-br ${glow} rounded-full blur-2xl group-hover/card:scale-150 transition-all duration-500 pointer-events-none`}
+                  className={`absolute -right-8 -bottom-8 w-28 h-28 bg-gradient-to-br ${glow} rounded-full blur-2xl group-hover/card:scale-150 transition-all duration-500 pointer-events-none opacity-40 group-hover/card:opacity-80`}
                 />
 
-                <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-[#e6007e] mb-4 group-hover/card:scale-110 transition-transform">
-                  <Icon size={20} />
-                </div>
+                {/* Subtle Top Accent Pill */}
+                <div className="w-8 h-1 rounded-full bg-slate-800 group-hover/card:bg-[#e6007e] group-hover/card:w-12 transition-all duration-300 mb-3" />
 
-                <div className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-sans">
+                {/* Centered Large Number */}
+                <div className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight font-sans group-hover/card:text-[#ff4d94] transition-colors duration-300">
                   {item.value}
                 </div>
 
-                <div className="text-xs sm:text-sm font-medium text-slate-400 mt-1 uppercase tracking-wider">
+                {/* Centered Label */}
+                <div className="text-[11px] sm:text-xs font-bold text-slate-400 group-hover/card:text-slate-200 mt-2.5 uppercase tracking-widest max-w-[180px] leading-relaxed transition-colors duration-300">
                   {item.label}
                 </div>
               </motion.div>

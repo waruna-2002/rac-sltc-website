@@ -37,6 +37,7 @@ export async function POST(request) {
       role,
       category,
       avenue,
+      avenues,
       faculty,
       image,
       bio,
@@ -70,11 +71,16 @@ export async function POST(request) {
 
     await dbConnect();
 
+    const avenuesArr = Array.isArray(avenues)
+      ? avenues.map(sanitizeInput)
+      : (avenue ? [sanitizeInput(avenue)] : []);
+
     const newMember = await TeamMember.create({
       name: sanitizeInput(name.trim()),
       role: sanitizeInput(role ? role.trim() : "Director"),
       category: category === "Executive Committee" ? "Executive Committee" : "Board of Directors",
-      avenue: sanitizeInput(avenue || ""),
+      avenues: avenuesArr,
+      avenue: sanitizeInput(avenue || avenuesArr.join(", ")),
       faculty: sanitizeInput(faculty || ""),
       image: image ? sanitizeUrl(image) : "",
       bio: sanitizeInput(bio || ""),

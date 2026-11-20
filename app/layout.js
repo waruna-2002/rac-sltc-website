@@ -146,7 +146,7 @@ export default function RootLayout({ children }) {
           <LaunchGate>
             <AmbientBackground />
             <Navbar />
-            <main className="flex-grow relative z-10">{children}</main>
+            <main className="flex-grow relative">{children}</main>
             <Footer />
           </LaunchGate>
         </AdminProvider>

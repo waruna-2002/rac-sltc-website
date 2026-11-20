@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Crown, Mail, Award, GraduationCap } from "lucide-react";
+import { X, Crown, Mail, Award } from "lucide-react";
 
 const LinkedinIcon = () => (
   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -25,7 +25,7 @@ export default function MemberModal({ member, onClose }) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -94,19 +94,28 @@ export default function MemberModal({ member, onClose }) {
             </h3>
 
             <p className="text-xs font-bold uppercase tracking-wider text-[#e6007e] mt-1">
-              {member.role} • <span className="text-slate-400">{member.category}</span>
+              {member.role}
             </p>
 
-            {member.avenue && member.avenue !== "Executive / General" && (
-              <span className="inline-block mt-2 text-[10px] font-semibold text-cyan-300 bg-cyan-950/50 border border-cyan-800/60 px-3 py-0.5 rounded-full">
-                {member.avenue}
-              </span>
-            )}
-
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-2 font-medium">
-              <GraduationCap size={15} className="text-cyan-400" />
-              <span>{member.faculty}</span>
-            </div>
+            {(() => {
+              const list = Array.isArray(member.avenues) && member.avenues.length > 0
+                ? member.avenues
+                : (member.avenue ? String(member.avenue).split(",").map((a) => a.trim()) : []);
+              const valid = list.filter((a) => a && !a.toLowerCase().includes("executive") && !a.toLowerCase().includes("general"));
+              if (valid.length === 0) return null;
+              return (
+                <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 mt-2">
+                  {valid.map((ave) => (
+                    <span
+                      key={ave}
+                      className="inline-block text-[10px] font-semibold text-cyan-300 bg-cyan-950/50 border border-cyan-800/60 px-3 py-0.5 rounded-full"
+                    >
+                      {ave}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Bio & Details */}

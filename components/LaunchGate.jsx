@@ -4,8 +4,6 @@ import React, { useState, useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
 import ComingSoonCountdown from "./ComingSoonCountdown";
-import Link from "next/link";
-import { ShieldCheck, Eye, ArrowRight } from "lucide-react";
 
 function LaunchGateInner({ children }) {
   const pathname = usePathname();
@@ -54,15 +52,7 @@ function LaunchGateInner({ children }) {
 
   // If user passed ?bypass_countdown=true, let them through
   if (isBypassCountdown) {
-    return (
-      <>
-        <div className="bg-amber-600/90 text-white text-xs font-semibold py-1.5 px-4 text-center sticky top-0 z-[100] backdrop-blur-md flex items-center justify-center gap-2">
-          <Eye className="w-4 h-4" />
-          <span>Bypass Mode Active: Viewing site with countdown bypassed.</span>
-        </div>
-        {children}
-      </>
-    );
+    return <>{children}</>;
   }
 
   // If user passed ?test_countdown=true, force show countdown for testing
@@ -75,28 +65,12 @@ function LaunchGateInner({ children }) {
     );
   }
 
-  // If admin is logged in and mode is COUNTDOWN, allow admin preview with a top banner
+  // If admin is logged in and mode is COUNTDOWN, allow clean admin preview
   const isCountdownActive =
     launchStatus?.mode === "COUNTDOWN" && !launchStatus?.isLaunched && !hasUnlockedLocally;
 
   if (isCountdownActive && adminRole && !isVerifying) {
-    return (
-      <>
-        <div className="bg-[#e6007e]/90 text-white text-xs font-semibold py-2 px-4 text-center sticky top-0 z-[100] backdrop-blur-md flex items-center justify-center gap-3 shadow-lg">
-          <ShieldCheck className="w-4 h-4" />
-          <span>
-            <strong>Admin Preview:</strong> Public visitors currently see the Pre-Launch Countdown.
-          </span>
-          <Link
-            href="/admin?tab=launch"
-            className="inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white rounded-full px-2.5 py-0.5 transition"
-          >
-            Launch Controls <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-        {children}
-      </>
-    );
+    return <>{children}</>;
   }
 
   // If Pre-launch Countdown mode is active and site is not yet launched

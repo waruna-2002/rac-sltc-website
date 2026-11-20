@@ -21,7 +21,9 @@ import {
   getStoredTeam, 
   addTeamMember, 
   updateTeamMember, 
-  deleteTeamMember 
+  deleteTeamMember,
+  sortTeamByRoleTier,
+  isExcoRole
 } from "@/lib/teamStore";
 import { 
   getStoredStats, 
@@ -86,6 +88,33 @@ import {
   Download,
   Rocket
 } from "lucide-react";
+
+const TEAM_ROLE_OPTIONS = [
+  "President",
+  "Vice President",
+  "Secretary",
+  "Treasurer",
+  "Sergeant at Arms",
+  "Editor",
+  "Avenue Secretary",
+  "Avenue Treasurer",
+  "Director",
+  "Assistant Director",
+  "Assistant Secretary",
+  "Assistant Treasurer",
+  "Assistant Treasure",
+];
+
+const AVAILABLE_AVENUES = [
+  "Community Service Avenue",
+  "Club Service Avenue",
+  "Professional Development Avenue",
+  "Membership Development Avenue",
+  "International Service Avenue",
+  "Public Relations and Public Image",
+  "Sports and Recreational Activities",
+  "Environmental Service Avenue",
+];
 
 function AdminDashboardInner() {
   const { 
@@ -253,16 +282,54 @@ function AdminDashboardInner() {
   // New Member Form State
   const [newMemberForm, setNewMemberForm] = useState({
     name: "",
-    role: "Director",
+    role: "",
     category: "Board of Directors",
-    avenue: "Community Service Avenue",
-    faculty: "Faculty of Computing & IT",
+    avenue: "",
+    avenues: [],
+    faculty: "",
     image: "",
     bio: "",
     email: "",
     linkedin: "",
     instagram: "",
   });
+  const [memberErrors, setMemberErrors] = useState({
+    name: "",
+    role: "",
+    avenue: "",
+  });
+
+  const toggleNewMemberAvenue = (ave) => {
+    setNewMemberForm((prev) => {
+      const current = Array.isArray(prev.avenues) ? prev.avenues : (prev.avenue ? [prev.avenue] : []);
+      const exists = current.includes(ave);
+      const updated = exists ? current.filter((a) => a !== ave) : [...current, ave];
+      return {
+        ...prev,
+        avenues: updated,
+        avenue: updated.join(", "),
+      };
+    });
+    if (memberErrors.avenue) {
+      setMemberErrors((prev) => ({ ...prev, avenue: "" }));
+    }
+  };
+
+  const toggleEditMemberAvenue = (ave) => {
+    setEditingMember((prev) => {
+      if (!prev) return prev;
+      const current = Array.isArray(prev.avenues) && prev.avenues.length > 0
+        ? prev.avenues
+        : (prev.avenue ? String(prev.avenue).split(",").map((a) => a.trim()).filter(Boolean) : []);
+      const exists = current.includes(ave);
+      const updated = exists ? current.filter((a) => a !== ave) : [...current, ave];
+      return {
+        ...prev,
+        avenues: updated,
+        avenue: updated.join(", "),
+      };
+    });
+  };
 
   // New Project Form State
   const [newProjectForm, setNewProjectForm] = useState({
@@ -778,69 +845,79 @@ function AdminDashboardInner() {
     requestDelete("member", id, m?.fullName ? `${m.fullName}'s application` : "this application");
   };
 
-  const exportApplicantsToExcel = () => {
+  const exportApplicantsToExcel = async () => {
     if (!memberApplicants || memberApplicants.length === 0) {
       showToast("No applicant records available to export", "error");
       return;
     }
 
-    const headers = [
-      "Full Name",
-      "Student ID",
-      "Email",
-      "WhatsApp / Phone",
-      "Faculty",
-      "Year of Study",
-      "Avenue",
-      "NIC",
-      "Date of Birth",
-      "Gender",
-      "Address",
-      "Other Club Experience",
-      "Status",
-      "Registration Date",
-      "Payment Receipt URL",
-      "Photo URL"
-    ];
+    try {
+      showToast("Generating Excel file...", "info");
+      const XLSX = await import("xlsx");
 
-    const escapeCsv = (val) => {
-      if (val === null || val === undefined) return '""';
-      const str = String(val).replace(/"/g, '""');
-      return `"${str}"`;
-    };
+      const headers = [
+        "Full Name",
+        "Student ID",
+        "Email",
+        "WhatsApp / Phone",
+        "Faculty",
+        "Year of Study",
+        "Avenue",
+        "NIC",
+        "Date of Birth",
+        "Gender",
+        "Address",
+        "Other Club Experience",
+        "Status",
+        "Registration Date",
+        "Payment Receipt URL",
+        "Photo URL"
+      ];
 
-    const rows = memberApplicants.map((m) => [
-      escapeCsv(m.fullName || ""),
-      escapeCsv(m.studentId || ""),
-      escapeCsv(m.email || ""),
-      escapeCsv(m.whatsapp || m.phone || ""),
-      escapeCsv(m.faculty || ""),
-      escapeCsv(m.yearOfStudy || ""),
-      escapeCsv(m.avenue || (m.avenues && m.avenues[0]) || ""),
-      escapeCsv(m.nic || ""),
-      escapeCsv(m.dob || ""),
-      escapeCsv(m.gender || ""),
-      escapeCsv(m.address || ""),
-      escapeCsv(m.otherClub || ""),
-      escapeCsv(m.status || "pending"),
-      escapeCsv(m.createdAt ? new Date(m.createdAt).toLocaleString() : ""),
-      escapeCsv(m.paymentReceiptUrl || ""),
-      escapeCsv(m.photoUrl || "")
-    ].join(","));
+      const worksheetData = [
+        headers,
+        ...memberApplicants.map((m) => [
+          m.fullName || "",
+          m.studentId || "",
+          m.email || "",
+          m.whatsapp || m.phone || "",
+          m.faculty || "",
+          m.yearOfStudy || "",
+          m.avenue || (m.avenues && m.avenues[0]) || "",
+          m.nic || "",
+          m.dob || "",
+          m.gender || "",
+          m.address || "",
+          m.otherClub || "",
+          m.status || "pending",
+          m.createdAt ? new Date(m.createdAt).toLocaleString() : "",
+          m.paymentReceiptUrl || "",
+          m.photoUrl || ""
+        ])
+      ];
 
-    // UTF-8 BOM ensures Excel displays UTF-8 strings properly without character mangling
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\r\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const dateStr = new Date().toISOString().split("T")[0];
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Rotaract_SLTC_Member_Applicants_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    showToast("Exported member applicants to Excel spreadsheet!", "success");
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Auto-fit column widths
+      worksheet["!cols"] = headers.map((h, i) => {
+        let maxLen = h.length;
+        worksheetData.forEach((row) => {
+          const val = row[i] ? String(row[i]) : "";
+          if (val.length > maxLen) maxLen = Math.min(val.length, 45);
+        });
+        return { wch: maxLen + 3 };
+      });
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Member Applicants");
+
+      const dateStr = new Date().toISOString().split("T")[0];
+      XLSX.writeFile(workbook, `Rotaract_SLTC_Member_Applicants_${dateStr}.xlsx`);
+      showToast("Successfully exported as Excel (.xlsx) file!", "success");
+    } catch (err) {
+      console.error("Excel export error:", err);
+      showToast("Failed to generate Excel file", "error");
+    }
   };
 
   // --- CONTACT INBOX ACTIONS ---
@@ -871,15 +948,85 @@ function AdminDashboardInner() {
   // --- TEAM MEMBER MANAGEMENT ACTIONS ---
   const handleAddMemberSubmit = (e) => {
     e.preventDefault();
-    setTeam(addTeamMember(newMemberForm));
+    const rawName = (newMemberForm.name || "").replace(/^rtr\.?\s*/i, "").trim();
+    const errors = {};
+    if (!rawName) {
+      errors.name = "Member name is required";
+    }
+    if (!newMemberForm.role) {
+      errors.role = "Please select a Role";
+    }
+    const selectedAvenues = (newMemberForm.avenues && newMemberForm.avenues.length > 0)
+      ? newMemberForm.avenues
+      : (newMemberForm.avenue ? [newMemberForm.avenue] : []);
+
+    const isExco = isExcoRole(newMemberForm.role);
+    if (!isExco && selectedAvenues.length === 0) {
+      errors.avenue = "Please select at least one Avenue";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setMemberErrors(errors);
+      showToast("Please fill all required fields marked in red!", "error");
+      return;
+    }
+
+    const payload = {
+      ...newMemberForm,
+      name: `Rtr. ${rawName}`,
+      avenues: selectedAvenues,
+      avenue: selectedAvenues.join(", "),
+    };
+
+    setTeam(addTeamMember(payload));
     setIsAddingMember(false);
+    setMemberErrors({ name: "", role: "", avenue: "" });
+    setNewMemberForm({
+      name: "",
+      role: "",
+      category: "Board of Directors",
+      avenue: "",
+      avenues: [],
+      faculty: "",
+      image: "",
+      bio: "",
+      email: "",
+      linkedin: "",
+      instagram: "",
+    });
     showToast("New team member added to directory!", "success");
   };
 
   const handleSaveMemberEdit = (e) => {
     e.preventDefault();
     if (!editingMember) return;
-    setTeam(updateTeamMember(editingMember.id, editingMember));
+    const rawName = (editingMember.name || "").replace(/^rtr\.?\s*/i, "").trim();
+    if (!rawName) {
+      showToast("Member name is required!", "error");
+      return;
+    }
+    if (!editingMember.role) {
+      showToast("Please select a Role!", "error");
+      return;
+    }
+    const selectedAvenues = (Array.isArray(editingMember.avenues) && editingMember.avenues.length > 0)
+      ? editingMember.avenues
+      : (editingMember.avenue ? String(editingMember.avenue).split(",").map((a) => a.trim()).filter(Boolean) : []);
+
+    const isExco = isExcoRole(editingMember.role);
+    if (!isExco && selectedAvenues.length === 0) {
+      showToast("Please select at least one Avenue!", "error");
+      return;
+    }
+
+    const payload = {
+      ...editingMember,
+      name: `Rtr. ${rawName}`,
+      avenues: selectedAvenues,
+      avenue: selectedAvenues.join(", "),
+    };
+
+    setTeam(updateTeamMember(editingMember.id, payload));
     setEditingMember(null);
     showToast("Team member profile updated!", "success");
   };
@@ -1950,7 +2097,7 @@ function AdminDashboardInner() {
                 type="button"
                 onClick={exportApplicantsToExcel}
                 className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition-all cursor-pointer ml-2"
-                title="Download Member Applicants as Excel Spreadsheet (CSV)"
+                title="Download Member Applicants as Microsoft Excel Workbook (.xlsx)"
               >
                 <Download size={14} />
                 <span>Export to Excel</span>
@@ -2254,7 +2401,22 @@ function AdminDashboardInner() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white">Board &amp; Leadership Directory</h2>
             <Button
-              onClick={() => setIsAddingMember(true)}
+              onClick={() => {
+                setMemberErrors({ name: "", role: "", avenue: "" });
+                setNewMemberForm({
+                  name: "",
+                  role: "",
+                  avenue: "",
+                  avenues: [],
+                  faculty: "",
+                  image: "",
+                  bio: "",
+                  email: "",
+                  linkedin: "",
+                  instagram: "",
+                });
+                setIsAddingMember(true);
+              }}
               className="py-2.5 text-xs font-bold uppercase tracking-wider"
             >
               <UserPlus size={16} />
@@ -2263,7 +2425,7 @@ function AdminDashboardInner() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {team.map((member) => (
+            {sortTeamByRoleTier(team).map((member) => (
               <div
                 key={member.id}
                 className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
@@ -2277,12 +2439,22 @@ function AdminDashboardInner() {
                       className="object-cover"
                     />
                   </div>
-                  <span className="text-[10px] font-bold text-[#e6007e] uppercase tracking-wider">
-                    {member.category}
-                  </span>
+                  <div className="flex flex-wrap gap-1 mb-1">
+                    {(() => {
+                      const list = Array.isArray(member.avenues) && member.avenues.length > 0
+                        ? member.avenues
+                        : (member.avenue ? String(member.avenue).split(",").map((a) => a.trim()) : []);
+                      const valid = list.filter((a) => a && !a.toLowerCase().includes("executive") && !a.toLowerCase().includes("general"));
+                      if (valid.length === 0) return null;
+                      return valid.map((ave, i) => (
+                        <span key={i} className="text-[10px] font-bold text-[#e6007e] uppercase tracking-wider bg-[#e6007e]/10 px-2 py-0.5 rounded-md">
+                          {ave}
+                        </span>
+                      ));
+                    })()}
+                  </div>
                   <h3 className="text-base font-bold text-white mt-1">{member.name}</h3>
                   <p className="text-xs text-[#ff66ab] font-medium">{member.role}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">{member.faculty}</p>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800/80">
@@ -2365,7 +2537,7 @@ function AdminDashboardInner() {
 
       {/* EDIT PROJECT MODAL */}
       {editingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEditingProject(null)} />
           <form
             onSubmit={handleSaveProjectEdit}
@@ -2604,7 +2776,7 @@ function AdminDashboardInner() {
 
       {/* ADD PROJECT MODAL */}
       {isAddingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsAddingProject(false)} />
           <form
             onSubmit={handleAddProjectSubmit}
@@ -2767,7 +2939,7 @@ function AdminDashboardInner() {
 
       {/* CREATE EVENT MODAL */}
       {isAddingEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsAddingEvent(false)} />
           <form
             onSubmit={handleAddEventSubmit}
@@ -2921,7 +3093,7 @@ function AdminDashboardInner() {
 
       {/* EDIT EVENT MODAL */}
       {editingEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEditingEvent(null)} />
           <form
             onSubmit={handleSaveEventEdit}
@@ -3122,59 +3294,104 @@ function AdminDashboardInner() {
 
       {/* EDIT TEAM MEMBER MODAL */}
       {editingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEditingMember(null)} />
           <form
             onSubmit={handleSaveMemberEdit}
             className="relative w-full max-w-xl p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl my-8 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-xl font-bold text-white">Edit Team Member</h3>
-            <Input label="Name *" value={editingMember.name || ""} onChange={(e) => setEditingMember({ ...editingMember, name: e.target.value })} required />
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                Name *
+              </label>
+              <div className="relative flex items-center">
+                <div className="absolute left-3 z-10 flex items-center select-none pointer-events-none">
+                  <span className="text-xs font-extrabold text-[#ff4d94] bg-[#e6007e]/15 px-2 py-0.5 rounded-md border border-[#e6007e]/30">
+                    RTR.
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Full Name (e.g. Kasun Perera)"
+                  value={(editingMember.name || "").replace(/^rtr\.?\s*/i, "")}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/^rtr\.?\s*/i, "");
+                    setEditingMember({ ...editingMember, name: val });
+                  }}
+                  className="w-full pl-18 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 focus:border-[#e6007e] text-xs text-white placeholder-slate-500 transition-all"
+                  required
+                />
+              </div>
+            </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Role *" value={editingMember.role || ""} onChange={(e) => setEditingMember({ ...editingMember, role: e.target.value })} required />
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Category *</label>
-                <select
-                  value={editingMember.category || "Board of Directors"}
-                  onChange={(e) => setEditingMember({ ...editingMember, category: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
-                >
-                  <option value="Executive Committee">Executive Committee</option>
-                  <option value="Board of Directors">Board of Directors</option>
-                </select>
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Role *</label>
+              <select
+                value={editingMember.role || ""}
+                onChange={(e) => setEditingMember({ ...editingMember, role: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 focus:border-[#e6007e] text-xs text-white"
+                required
+              >
+                <option value="" disabled className="text-slate-500">Select Role *</option>
+                {TEAM_ROLE_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+                {editingMember.role && !TEAM_ROLE_OPTIONS.includes(editingMember.role) && (
+                  <option value={editingMember.role}>{editingMember.role}</option>
+                )}
+              </select>
+            </div>
+
+            {/* Avenue * Multi-Select Pills */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold uppercase text-slate-300">
+                  Avenues {isExcoRole(editingMember.role) ? (
+                    <span className="text-slate-500 font-normal lowercase">(optional for Executive Officers)</span>
+                  ) : (
+                    <>* <span className="text-slate-500 font-normal lowercase">(select one or more)</span></>
+                  )}
+                </label>
+                {(() => {
+                  const currentAves = Array.isArray(editingMember.avenues) && editingMember.avenues.length > 0
+                    ? editingMember.avenues
+                    : (editingMember.avenue ? String(editingMember.avenue).split(",").map((a) => a.trim()).filter(Boolean) : []);
+                  return currentAves.length > 0 ? (
+                    <span className="text-[11px] font-semibold text-[#ff66ab]">
+                      {currentAves.length} selected
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+              <div className="flex flex-wrap gap-2 p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
+                {AVAILABLE_AVENUES.map((ave) => {
+                  const currentAves = Array.isArray(editingMember.avenues) && editingMember.avenues.length > 0
+                    ? editingMember.avenues
+                    : (editingMember.avenue ? String(editingMember.avenue).split(",").map((a) => a.trim()).filter(Boolean) : []);
+                  const isSelected = currentAves.includes(ave);
+                  return (
+                    <button
+                      key={ave}
+                      type="button"
+                      onClick={() => toggleEditMemberAvenue(ave)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30 border border-[#ff4d94]"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700/60"
+                      }`}
+                    >
+                      {isSelected ? <Check size={13} className="stroke-[3]" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />}
+                      <span>{ave}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
-                <select
-                  value={editingMember.avenue || "Community Service Avenue"}
-                  onChange={(e) => setEditingMember({ ...editingMember, avenue: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
-                >
-                  <option value="Executive / General">Executive / General</option>
-                  <option value="Community Service Avenue">Community Service Avenue</option>
-                  <option value="Club Service Avenue">Club Service Avenue</option>
-                  <option value="Professional Development Avenue">Professional Development Avenue</option>
-                  <option value="Membership Development Avenue">Membership Development Avenue</option>
-                  <option value="International Service Avenue">International Service Avenue</option>
-                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
-                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
-                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
-                </select>
-              </div>
-              <Input label="Faculty" value={editingMember.faculty || ""} onChange={(e) => setEditingMember({ ...editingMember, faculty: e.target.value })} placeholder="e.g. Faculty of Computing & IT" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="LinkedIn Profile URL (Optional)"
-                placeholder="https://linkedin.com/in/username"
-                value={editingMember.linkedin || ""}
-                onChange={(e) => setEditingMember({ ...editingMember, linkedin: e.target.value })}
-              />
               <Input
                 label="Email Address (Optional)"
                 type="email"
@@ -3182,35 +3399,63 @@ function AdminDashboardInner() {
                 value={editingMember.email || ""}
                 onChange={(e) => setEditingMember({ ...editingMember, email: e.target.value })}
               />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Photo Upload</label>
-              {editingMember.image && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 mb-2">
-                  <div className="w-12 h-12 rounded-full overflow-hidden relative shrink-0 border border-slate-700">
-                    <Image src={editingMember.image} alt="Member preview" fill className="object-cover" unoptimized />
-                  </div>
-                  <div className="flex-1 truncate text-xs text-slate-300">Photo attached</div>
-                  <button
-                    type="button"
-                    onClick={() => setEditingMember({ ...editingMember, image: "" })}
-                    className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg text-xs font-bold cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleAdminFileUpload(e, (url) => setEditingMember({ ...editingMember, image: Array.isArray(url) ? url[0] : url }))}
-                className="text-xs text-slate-400 mb-2 block"
+              <Input
+                label="LinkedIn Profile URL (Optional)"
+                placeholder="https://linkedin.com/in/username"
+                value={editingMember.linkedin || ""}
+                onChange={(e) => setEditingMember({ ...editingMember, linkedin: e.target.value })}
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Bio / Profile Summary</label>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1.5">
+                Photo Upload <span className="text-slate-500 font-normal lowercase">(optional)</span>
+              </label>
+              {editingMember.image ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800">
+                  <div className="w-12 h-12 rounded-full overflow-hidden relative shrink-0 border border-slate-700">
+                    <Image src={editingMember.image} alt="Member preview" fill className="object-cover" unoptimized />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">Photo attached</p>
+                    <p className="text-[10px] text-emerald-400">Ready to save</p>
+                  </div>
+                  <label className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5">
+                    <Upload size={12} />
+                    <span>Change</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleAdminFileUpload(e, (url) => setEditingMember({ ...editingMember, image: Array.isArray(url) ? url[0] : url }))}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditingMember({ ...editingMember, image: "" })}
+                    className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border border-dashed border-slate-700 hover:border-[#e6007e] bg-slate-900/50 hover:bg-slate-900 text-slate-300 hover:text-white text-xs font-semibold cursor-pointer transition-all group">
+                  <Upload size={15} className="text-[#ff66ab] group-hover:scale-110 transition-transform" />
+                  <span>Select Member Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleAdminFileUpload(e, (url) => setEditingMember({ ...editingMember, image: Array.isArray(url) ? url[0] : url }))}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                Bio / Profile Summary <span className="text-slate-500 font-normal lowercase">(optional)</span>
+              </label>
               <textarea
                 rows={3}
                 placeholder="Short leadership bio or summary..."
@@ -3230,59 +3475,135 @@ function AdminDashboardInner() {
 
       {/* ADD MEMBER MODAL */}
       {isAddingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsAddingMember(false)} />
           <form
             onSubmit={handleAddMemberSubmit}
             className="relative w-full max-w-xl p-8 rounded-3xl bg-[#0c1017] border border-slate-800 space-y-4 z-10 shadow-2xl my-8 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-xl font-bold text-white">Add New Team Member</h3>
-            <Input label="Name *" value={newMemberForm.name} onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })} required />
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                Name *
+              </label>
+              <div className="relative flex items-center">
+                <div className="absolute left-3 z-10 flex items-center select-none pointer-events-none">
+                  <span className="text-xs font-extrabold text-[#ff4d94] bg-[#e6007e]/15 px-2 py-0.5 rounded-md border border-[#e6007e]/30">
+                    RTR.
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Full Name (e.g. Kasun Perera)"
+                  value={(newMemberForm.name || "").replace(/^rtr\.?\s*/i, "")}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/^rtr\.?\s*/i, "");
+                    setNewMemberForm({ ...newMemberForm, name: val });
+                    if (memberErrors.name) setMemberErrors((prev) => ({ ...prev, name: "" }));
+                  }}
+                  className={`w-full pl-18 pr-4 py-2.5 rounded-xl bg-slate-900 border text-xs text-white placeholder-slate-500 transition-all ${
+                    memberErrors.name
+                      ? "border-rose-500 focus:border-rose-500 ring-1 ring-rose-500/50"
+                      : "border-slate-800 focus:border-[#e6007e]"
+                  }`}
+                  required
+                />
+              </div>
+              {memberErrors.name && (
+                <p className="text-[11px] text-rose-400 mt-1 font-medium flex items-center gap-1">
+                  ⚠️ {memberErrors.name}
+                </p>
+              )}
+            </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Role *" value={newMemberForm.role} onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value })} required />
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Category *</label>
-                <select
-                  value={newMemberForm.category}
-                  onChange={(e) => setNewMemberForm({ ...newMemberForm, category: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
-                >
-                  <option value="Executive Committee">Executive Committee</option>
-                  <option value="Board of Directors">Board of Directors</option>
-                </select>
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Role *</label>
+              <select
+                value={newMemberForm.role}
+                onChange={(e) => {
+                  const r = e.target.value;
+                  setNewMemberForm({ ...newMemberForm, role: r });
+                  if (memberErrors.role) setMemberErrors((prev) => ({ ...prev, role: "" }));
+                  if (isExcoRole(r) && memberErrors.avenue) {
+                    setMemberErrors((prev) => ({ ...prev, avenue: "" }));
+                  }
+                }}
+                className={`w-full px-4 py-2.5 rounded-xl bg-slate-900 border text-xs text-white transition-all ${
+                  memberErrors.role
+                    ? "border-rose-500 focus:border-rose-500 ring-1 ring-rose-500/50"
+                    : "border-slate-800 focus:border-[#e6007e]"
+                }`}
+                required
+              >
+                <option value="" disabled className="text-slate-500">
+                  -- Select Role * --
+                </option>
+                {TEAM_ROLE_OPTIONS.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+                {newMemberForm.role && !TEAM_ROLE_OPTIONS.includes(newMemberForm.role) && (
+                  <option value={newMemberForm.role}>{newMemberForm.role}</option>
+                )}
+              </select>
+              {memberErrors.role && (
+                <p className="text-[11px] text-rose-400 mt-1 font-medium flex items-center gap-1">
+                  ⚠️ {memberErrors.role}
+                </p>
+              )}
+            </div>
+
+            {/* Avenue * Multi-Select Pills */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold uppercase text-slate-300">
+                  Avenues {isExcoRole(newMemberForm.role) ? (
+                    <span className="text-slate-500 font-normal lowercase">(optional for Executive Officers)</span>
+                  ) : (
+                    <>* <span className="text-slate-500 font-normal lowercase">(select one or more)</span></>
+                  )}
+                </label>
+                {(newMemberForm.avenues || []).length > 0 && (
+                  <span className="text-[11px] font-semibold text-[#ff66ab]">
+                    {(newMemberForm.avenues || []).length} selected
+                  </span>
+                )}
               </div>
+              <div
+                className={`flex flex-wrap gap-2 p-3 rounded-2xl bg-slate-900/80 border transition-all ${
+                  memberErrors.avenue
+                    ? "border-rose-500 ring-1 ring-rose-500/50"
+                    : "border-slate-800"
+                }`}
+              >
+                {AVAILABLE_AVENUES.map((ave) => {
+                  const isSelected = (newMemberForm.avenues || []).includes(ave);
+                  return (
+                    <button
+                      key={ave}
+                      type="button"
+                      onClick={() => toggleNewMemberAvenue(ave)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? "bg-[#e6007e] text-white shadow-md shadow-[#e6007e]/30 border border-[#ff4d94]"
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700/60"
+                      }`}
+                    >
+                      {isSelected ? <Check size={13} className="stroke-[3]" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />}
+                      <span>{ave}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {memberErrors.avenue && (
+                <p className="text-[11px] text-rose-400 mt-1 font-medium flex items-center gap-1">
+                  ⚠️ {memberErrors.avenue}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Avenue</label>
-                <select
-                  value={newMemberForm.avenue}
-                  onChange={(e) => setNewMemberForm({ ...newMemberForm, avenue: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white"
-                >
-                  <option value="Executive / General">Executive / General</option>
-                  <option value="Community Service Avenue">Community Service Avenue</option>
-                  <option value="Club Service Avenue">Club Service Avenue</option>
-                  <option value="Professional Development Avenue">Professional Development Avenue</option>
-                  <option value="Membership Development Avenue">Membership Development Avenue</option>
-                  <option value="International Service Avenue">International Service Avenue</option>
-                  <option value="Public Relations and Public Image">Public Relations and Public Image</option>
-                  <option value="Sports and Recreational Activities">Sports and Recreational Activities</option>
-                  <option value="Environmental Service Avenue">Environmental Service Avenue</option>
-                </select>
-              </div>
-              <Input label="Faculty" value={newMemberForm.faculty} onChange={(e) => setNewMemberForm({ ...newMemberForm, faculty: e.target.value })} placeholder="e.g. Faculty of Computing & IT" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="LinkedIn Profile URL (Optional)"
-                placeholder="https://linkedin.com/in/username"
-                value={newMemberForm.linkedin || ""}
-                onChange={(e) => setNewMemberForm({ ...newMemberForm, linkedin: e.target.value })}
-              />
               <Input
                 label="Email Address (Optional)"
                 type="email"
@@ -3290,35 +3611,63 @@ function AdminDashboardInner() {
                 value={newMemberForm.email || ""}
                 onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
               />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Photo Upload</label>
-              {newMemberForm.image && (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 mb-2">
-                  <div className="w-12 h-12 rounded-full overflow-hidden relative shrink-0 border border-slate-700">
-                    <Image src={newMemberForm.image} alt="Member preview" fill className="object-cover" unoptimized />
-                  </div>
-                  <div className="flex-1 truncate text-xs text-slate-300">Photo attached</div>
-                  <button
-                    type="button"
-                    onClick={() => setNewMemberForm({ ...newMemberForm, image: "" })}
-                    className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-lg text-xs font-bold cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleAdminFileUpload(e, (url) => setNewMemberForm({ ...newMemberForm, image: Array.isArray(url) ? url[0] : url }))}
-                className="text-xs text-slate-400 mb-2 block"
+              <Input
+                label="LinkedIn Profile URL (Optional)"
+                placeholder="https://linkedin.com/in/username"
+                value={newMemberForm.linkedin || ""}
+                onChange={(e) => setNewMemberForm({ ...newMemberForm, linkedin: e.target.value })}
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">Bio / Profile Summary</label>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1.5">
+                Photo Upload <span className="text-slate-500 font-normal lowercase">(optional)</span>
+              </label>
+              {newMemberForm.image ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800">
+                  <div className="w-12 h-12 rounded-full overflow-hidden relative shrink-0 border border-slate-700">
+                    <Image src={newMemberForm.image} alt="Member preview" fill className="object-cover" unoptimized />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">Photo attached</p>
+                    <p className="text-[10px] text-emerald-400">Ready to save</p>
+                  </div>
+                  <label className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5">
+                    <Upload size={12} />
+                    <span>Change</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleAdminFileUpload(e, (url) => setNewMemberForm({ ...newMemberForm, image: Array.isArray(url) ? url[0] : url }))}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setNewMemberForm({ ...newMemberForm, image: "" })}
+                    className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border border-dashed border-slate-700 hover:border-[#e6007e] bg-slate-900/50 hover:bg-slate-900 text-slate-300 hover:text-white text-xs font-semibold cursor-pointer transition-all group">
+                  <Upload size={15} className="text-[#ff66ab] group-hover:scale-110 transition-transform" />
+                  <span>Select Member Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleAdminFileUpload(e, (url) => setNewMemberForm({ ...newMemberForm, image: Array.isArray(url) ? url[0] : url }))}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-300 block mb-1">
+                Bio / Profile Summary <span className="text-slate-500 font-normal lowercase">(optional)</span>
+              </label>
               <textarea
                 rows={3}
                 placeholder="Short leadership bio or summary..."
@@ -3338,7 +3687,7 @@ function AdminDashboardInner() {
       {/* STYLED CONFIRMATION MODAL (Replaces window.confirm) */}
       <AnimatePresence>
         {deleteConfirm.show && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -3608,7 +3957,7 @@ function AdminDashboardInner() {
 
       {/* CREATE NEW MEDIA MODAL */}
       {isAddingMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsAddingMedia(false)} />
           <form
             onSubmit={handleAddMediaSubmit}
@@ -3771,7 +4120,7 @@ function AdminDashboardInner() {
 
       {/* EDIT MEDIA PUBLICATION MODAL */}
       {editingMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEditingMedia(null)} />
           <form
             onSubmit={handleSaveMediaEdit}

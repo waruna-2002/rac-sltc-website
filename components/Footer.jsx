@@ -40,7 +40,7 @@ const Icons = {
 
 export default function Footer() {
   const pathname = usePathname();
-  if (pathname?.startsWith("/launch")) return null;
+  if (pathname?.startsWith("/launch") || pathname?.startsWith("/admin")) return null;
 
   const [email, setEmail] = useState("");
   const [site, setSite] = useState({

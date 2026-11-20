@@ -17,7 +17,7 @@ const InstagramIcon = () => (
   </svg>
 );
 
-export default function PersonCard({ id, name, role, faculty, avenue, image, linkedin, instagram, onClick }) {
+export default function PersonCard({ id, name, role, faculty, avenue, avenues, image, linkedin, instagram, onClick }) {
   const isPresident = role && role.trim().toLowerCase() === "president";
   const hasCustomImage = image && image !== "/images/team/placeholder.jpg" && image.trim() !== "";
 
@@ -96,18 +96,26 @@ export default function PersonCard({ id, name, role, faculty, avenue, image, lin
         {role}
       </p>
 
-      {/* Avenue Tag */}
-      {avenue && avenue !== "Executive / General" && (
-        <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-0.5 rounded-full mt-1.5">
-          {avenue}
-        </span>
-      )}
-
-      {faculty && (
-        <p className="text-[11px] text-slate-400 mt-1 mb-4 font-light">
-          {faculty}
-        </p>
-      )}
+      {/* Avenue Tags (Supports single string or multiple avenues array) */}
+      {(() => {
+        const list = Array.isArray(avenues) && avenues.length > 0
+          ? avenues
+          : (avenue ? String(avenue).split(",").map((a) => a.trim()) : []);
+        const valid = list.filter((a) => a && !a.toLowerCase().includes("executive") && !a.toLowerCase().includes("general"));
+        if (valid.length === 0) return null;
+        return (
+          <div className="flex flex-wrap justify-center gap-1.5 mt-2 max-w-full">
+            {valid.map((ave) => (
+              <span
+                key={ave}
+                className="text-[10px] font-semibold text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-0.5 rounded-full"
+              >
+                {ave}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* View Profile Indicator Button */}
       <div className="my-3 inline-flex items-center gap-1 text-[10px] font-bold text-[#e6007e] group-hover:text-white uppercase tracking-wider bg-[#e6007e]/10 group-hover:bg-[#e6007e] px-3 py-1 rounded-full transition-colors border border-[#e6007e]/30">

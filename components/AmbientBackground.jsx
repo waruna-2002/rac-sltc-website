@@ -14,7 +14,7 @@ export default function AmbientBackground() {
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none touch-none"
+      className="fixed inset-0 pointer-events-none overflow-hidden -z-10 select-none touch-none"
     >
       {/* Orb 1: Primary Rotaract Cranberry / Magenta (Floating Top-Left) */}
       <motion.div
