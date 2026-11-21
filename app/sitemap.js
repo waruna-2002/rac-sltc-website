@@ -1,5 +1,10 @@
 export default function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rotaract.sltc.ac.lk';
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL &&
+    !process.env.NEXT_PUBLIC_APP_URL.includes("vercel.app") &&
+    !process.env.NEXT_PUBLIC_APP_URL.includes("localhost")
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : "https://rotaract.sltc.ac.lk";
   const currentDate = new Date();
 
   const routes = [

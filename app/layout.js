@@ -5,7 +5,12 @@ import AmbientBackground from "../components/AmbientBackground";
 import { AdminProvider } from "../context/AdminContext";
 import LaunchGate from "../components/LaunchGate";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rotaract.sltc.ac.lk";
+const siteUrl =
+  process.env.NEXT_PUBLIC_APP_URL &&
+  !process.env.NEXT_PUBLIC_APP_URL.includes("vercel.app") &&
+  !process.env.NEXT_PUBLIC_APP_URL.includes("localhost")
+    ? process.env.NEXT_PUBLIC_APP_URL
+    : "https://rotaract.sltc.ac.lk";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
