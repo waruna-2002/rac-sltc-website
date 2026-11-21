@@ -268,6 +268,8 @@ function AdminDashboardInner() {
   const [memberSearch, setMemberSearch] = useState("");
   const [memberFilterStatus, setMemberFilterStatus] = useState("all");
   const [messageFilterStatus, setMessageFilterStatus] = useState("all");
+  const [teamSearch, setTeamSearch] = useState("");
+  const [teamFilterAvenue, setTeamFilterAvenue] = useState("All");
 
   // Edit Modals State
   const [editingProject, setEditingProject] = useState(null);
@@ -1126,6 +1128,49 @@ function AdminDashboardInner() {
   const filteredMessages = contactMessages.filter((m) => {
     if (messageFilterStatus === "all") return true;
     return m.status === messageFilterStatus;
+  });
+
+  const filteredTeam = sortTeamByRoleTier(team).filter((member) => {
+    // 1. Avenue / Hierarchy Filter
+    if (teamFilterAvenue !== "All") {
+      if (teamFilterAvenue === "ExCo") {
+        if (!isExcoRole(member.role)) return false;
+      } else {
+        const memberAvenues = Array.isArray(member.avenues) && member.avenues.length > 0
+          ? member.avenues
+          : (member.avenue ? String(member.avenue).split(",").map((a) => a.trim()).filter(Boolean) : []);
+        
+        const target = teamFilterAvenue.toLowerCase().replace(/ avenue$/i, "").trim();
+        const matchesAvenue = memberAvenues.some((ave) => {
+          const a = ave.toLowerCase().replace(/ avenue$/i, "").trim();
+          return a.includes(target) || target.includes(a);
+        });
+
+        if (!matchesAvenue) return false;
+      }
+    }
+
+    // 2. Search Text Filter
+    const ts = (teamSearch || "").toLowerCase().trim();
+    if (!ts) return true;
+
+    const name = (member.name || "").toLowerCase();
+    const role = (member.role || "").toLowerCase();
+    const faculty = (member.faculty || "").toLowerCase();
+    const email = (member.email || "").toLowerCase();
+    const bio = (member.bio || "").toLowerCase();
+    const avenueStr = (
+      Array.isArray(member.avenues) ? member.avenues.join(" ") : (member.avenue || "")
+    ).toLowerCase();
+
+    return (
+      name.includes(ts) ||
+      role.includes(ts) ||
+      avenueStr.includes(ts) ||
+      faculty.includes(ts) ||
+      email.includes(ts) ||
+      bio.includes(ts)
+    );
   });
 
   return (
@@ -2398,8 +2443,20 @@ function AdminDashboardInner() {
       {/* TAB 6: TEAM MANAGEMENT */}
       {isSuperAdmin && activeTab === "team" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Board &amp; Leadership Directory</h2>
+          {/* Header & Add Button */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-xl font-bold text-white tracking-tight">Board &amp; Leadership Directory</h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono font-medium text-slate-400">
+                  {team.length} {team.length === 1 ? "member" : "members"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Manage club executive officers, directors, and leadership team members.
+              </p>
+            </div>
+
             <Button
               onClick={() => {
                 setMemberErrors({ name: "", role: "", avenue: "" });
@@ -2417,66 +2474,158 @@ function AdminDashboardInner() {
                 });
                 setIsAddingMember(true);
               }}
-              className="py-2.5 text-xs font-bold uppercase tracking-wider"
+              className="py-2.5 text-xs font-bold uppercase tracking-wider shrink-0"
             >
               <UserPlus size={16} />
               <span>Add Member</span>
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sortTeamByRoleTier(team).map((member) => {
-              const memberId = member.id || member._id;
-              return (
-                <div
-                  key={memberId}
-                  className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="relative h-48 rounded-xl overflow-hidden bg-slate-900 mb-3">
-                      <Image
-                        src={member.image || "/images/team/placeholder.jpg"}
-                        alt={member.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-1 mb-1">
-                      {(() => {
-                        const list = Array.isArray(member.avenues) && member.avenues.length > 0
-                          ? member.avenues
-                          : (member.avenue ? String(member.avenue).split(",").map((a) => a.trim()) : []);
-                        const valid = list.filter((a) => a && !a.toLowerCase().includes("executive") && !a.toLowerCase().includes("general"));
-                        if (valid.length === 0) return null;
-                        return valid.map((ave, i) => (
-                          <span key={i} className="text-[10px] font-bold text-[#e6007e] uppercase tracking-wider bg-[#e6007e]/10 px-2 py-0.5 rounded-md">
-                            {ave}
-                          </span>
-                        ));
-                      })()}
-                    </div>
-                    <h3 className="text-base font-bold text-white mt-1">{member.name}</h3>
-                    <p className="text-xs text-[#ff66ab] font-medium">{member.role}</p>
-                  </div>
+          {/* Search & Avenue Filter Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl bg-[#0c1017] border border-slate-800 shadow-lg">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+              {/* Live Search Input */}
+              <div className="relative flex-1 max-w-md">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search team member by name, role, avenue..."
+                  value={teamSearch}
+                  onChange={(e) => setTeamSearch(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#e6007e] transition-colors"
+                />
+                {teamSearch && (
+                  <button
+                    onClick={() => setTeamSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800/80">
-                    <button
-                      onClick={() => setEditingMember({ ...member, id: memberId, _id: memberId })}
-                      className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
-                    >
-                      <Edit3 size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMember(memberId)}
-                      className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:text-rose-300 cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+              {/* Avenue / Category Filter Dropdown */}
+              <select
+                value={teamFilterAvenue}
+                onChange={(e) => setTeamFilterAvenue(e.target.value)}
+                className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-[#e6007e] transition-colors cursor-pointer"
+              >
+                <option value="All">All Roles &amp; Avenues</option>
+                <option value="ExCo">Executive Committee (ExCo)</option>
+                <optgroup label="Avenues">
+                  {AVAILABLE_AVENUES.map((ave) => (
+                    <option key={ave} value={ave}>
+                      {ave}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+
+              {/* Reset Filters Button */}
+              {(teamSearch || teamFilterAvenue !== "All") && (
+                <button
+                  onClick={() => {
+                    setTeamSearch("");
+                    setTeamFilterAvenue("All");
+                  }}
+                  className="text-xs text-[#e6007e] hover:text-[#ff3399] font-medium transition-colors flex items-center gap-1 self-start sm:self-center px-1 cursor-pointer"
+                >
+                  <X size={12} />
+                  <span>Reset</span>
+                </button>
+              )}
+            </div>
+
+            {/* Filter Counter */}
+            <div className="text-xs text-slate-400 font-mono self-end md:self-center shrink-0">
+              Showing <span className="text-white font-semibold">{filteredTeam.length}</span> of{" "}
+              <span className="text-white font-semibold">{team.length}</span>
+            </div>
           </div>
+
+          {/* Members Grid or Empty State */}
+          {filteredTeam.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-[#0c1017] border border-slate-800 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500">
+                <Search size={20} />
+              </div>
+              <h3 className="text-sm font-bold text-white">No team members found</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                {teamSearch
+                  ? `No members match "${teamSearch}"${teamFilterAvenue !== "All" ? ` in ${teamFilterAvenue}` : ""}.`
+                  : `No members currently registered under ${teamFilterAvenue}.`}
+              </p>
+              {(teamSearch || teamFilterAvenue !== "All") && (
+                <button
+                  onClick={() => {
+                    setTeamSearch("");
+                    setTeamFilterAvenue("All");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={14} />
+                  <span>Clear Search &amp; Filters</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredTeam.map((member) => {
+                const memberId = member.id || member._id;
+                return (
+                  <div
+                    key={memberId}
+                    className="p-5 rounded-2xl bg-[#0c1017] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="relative h-48 rounded-xl overflow-hidden bg-slate-900 mb-3">
+                        <Image
+                          src={member.image || "/images/team/placeholder.jpg"}
+                          alt={member.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1 mb-1">
+                        {(() => {
+                          const list = Array.isArray(member.avenues) && member.avenues.length > 0
+                            ? member.avenues
+                            : (member.avenue ? String(member.avenue).split(",").map((a) => a.trim()) : []);
+                          const valid = list.filter((a) => a && !a.toLowerCase().includes("executive") && !a.toLowerCase().includes("general"));
+                          if (valid.length === 0) return null;
+                          return valid.map((ave, i) => (
+                            <span key={i} className="text-[10px] font-bold text-[#e6007e] uppercase tracking-wider bg-[#e6007e]/10 px-2 py-0.5 rounded-md">
+                              {ave}
+                            </span>
+                          ));
+                        })()}
+                      </div>
+                      <h3 className="text-base font-bold text-white mt-1">{member.name}</h3>
+                      <p className="text-xs text-[#ff66ab] font-medium">{member.role}</p>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800/80">
+                      <button
+                        onClick={() => setEditingMember({ ...member, id: memberId, _id: memberId })}
+                        className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer transition-colors"
+                        title="Edit member"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMember(memberId)}
+                        className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:text-rose-300 cursor-pointer transition-colors"
+                        title="Delete member"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
