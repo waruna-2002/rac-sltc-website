@@ -30,12 +30,16 @@ export async function GET(request) {
       query.avenue = avenue;
     }
 
-    // Public filter: approved events only
-    if (approvalStatus === "all") {
-      // no filter on approvalStatus
-    } else if (approvalStatus === "pending") {
+    // Access check: only authenticated admins can inspect pending or rejected events
+    const session = getSession(request);
+    const isAdmin = session?.authenticated && ["super_admin", "project_editor"].includes(session.role);
+
+    // Public visitors can only access approved events
+    if (isAdmin && approvalStatus === "all") {
+      // no filter on approvalStatus for admins
+    } else if (isAdmin && approvalStatus === "pending") {
       query.approvalStatus = "pending";
-    } else if (approvalStatus === "rejected") {
+    } else if (isAdmin && approvalStatus === "rejected") {
       query.approvalStatus = "rejected";
     } else {
       query.$or = [
@@ -68,9 +72,9 @@ export async function GET(request) {
       list = list.filter((e) => e.avenue === avenue);
     }
 
-    if (approvalStatus === "all") {
-      // return all
-    } else if (approvalStatus) {
+    if (isAdmin && approvalStatus === "all") {
+      // return all for admin
+    } else if (isAdmin && approvalStatus) {
       list = list.filter((e) => e.approvalStatus === approvalStatus);
     } else {
       list = list.filter((e) => (e.approvalStatus || "approved") === "approved");

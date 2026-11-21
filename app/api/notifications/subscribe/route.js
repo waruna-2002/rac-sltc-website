@@ -3,9 +3,28 @@ import dbConnect from "@/lib/mongodb";
 import NotificationSubscriber from "@/models/NotificationSubscriber";
 import webpush from "@/lib/webPush";
 import nodemailer from "nodemailer";
+import { 
+  getClientIp, 
+  checkServerRateLimit, 
+  rateLimitExceededResponse 
+} from "@/lib/serverRateLimit";
 
 export async function POST(request) {
   try {
+    // Rate limit: Max 5 subscription actions per 10 minutes per IP to block email flood abuse
+    const ip = getClientIp(request);
+    const rateCheck = checkServerRateLimit(`sub_notify:${ip}`, {
+      limit: 5,
+      windowMs: 10 * 60 * 1000,
+    });
+
+    if (!rateCheck.allowed) {
+      return rateLimitExceededResponse(
+        rateCheck.resetInSeconds,
+        "Too many notification subscription requests. Please try again shortly."
+      );
+    }
+
     const body = await request.json();
     const { type, subscription, email, test } = body;
 
