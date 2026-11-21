@@ -83,7 +83,10 @@ export const metadata = {
     },
   },
   verification: {
-    google: "46rZdmT52qRuxdUL1DX5nQNroanLM_zwgpCVi35TeZg",
+    google: [
+      "ZOv6MZxF2XFZHgcRtwF_RTOwyjvctEyzZ9H3U43_8Zw",
+      "46rZdmT52qRuxdUL1DX5nQNroanLM_zwgpCVi35TeZg",
+    ],
   },
 };
 
@@ -129,6 +132,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <meta
+          name="google-site-verification"
+          content="ZOv6MZxF2XFZHgcRtwF_RTOwyjvctEyzZ9H3U43_8Zw"
+        />
         <meta
           name="google-site-verification"
           content="46rZdmT52qRuxdUL1DX5nQNroanLM_zwgpCVi35TeZg"
